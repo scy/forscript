@@ -1,0 +1,33 @@
+\input{article.tex}
+\pagestyle{empty}
+
+\author{Tim Weber}
+\title{Exposé}
+\begin{document}
+\section*{Exposé:}
+\subsection*{Hintergrund und Motivation}
+Zur lückenlosen Dokumentation forensischer Untersuchungen von Computersystemen benutzen Forensiker spezielle Software-Werkzeuge (Tools), mit der die Interaktion mit dem betroffenen System automatisch dokumentiert wird.
+Für das Betriebssystem Linux ist das möglicherweise bekannteste solche Tool die Software \emph{script}, die als Bestandteil des Paketes \emph{util-linux} bzw. \emph{util-linux-ng} auf quasi jedem Linux-System vorinstalliert ist.
+
+Leider besitzt \emph{script} einige Schwächen in Hinblick auf die Verwendung als forensisches Tool, insbesondere diese:
+\begin{itemize}
+\item Es protokolliert nur die Ausgabe der aufgerufenen Befehle, nicht jedoch die vom Benutzer getätigte Eingaben.
+\item Aus den protokollierten Daten muss der zeitliche Verlauf ersichtlich sein. \emph{script} erlaubt zwar das Aufzeichnen von Zeitinformationen, legt diese aber in einer vom eigentlichen Inhaltsprotokoll getrennten Datei ab. Für ein möglichst konsistentes Protokoll ist diese Herangehensweise suboptimal.
+\item Die Dokumentation von \emph{script} ist dürftig, der Quellcode fast vollständig undokumentiert. Es findet sich keine Angabe, für welche Anwendungsszenarien \emph{script} ausgelegt ist und welchen Beschränkungen die Software unterliegt.
+\end{itemize}
+
+\subsection*{Ziel der Arbeit}
+Im Verlauf dieser Bachelorarbeit ist eine Software zu erstellen, die in ihrer Funktionalität dem ursprünglichen \emph{script} entspricht, jedoch die o.g. Nachteile behebt.
+Der Fokus bei der Entwicklung liegt auf dem Einsatz der Software als Hilfsmittel bei forensischen Analysen.
+
+\subsection*{Konkrete Aufgabenstellung}
+\begin{enumerate}
+\item Analyse von \emph{script}, wie es in \emph{util-linux} und \emph{util-linux-ng} enthalten ist, auf Schwächen in Hinblick auf den computerforensischen Einsatz.
+\item Beschreibung des Ausgabeformates von \emph{script} und seiner Nachteile.
+\item Detaillierte Beschreibung eines für forensische Zwecke geeigneten Ausgabeformates.
+\item Implementierung einer Software für Linux, die wie \emph{script} eingesetzt wird, jedoch das zuvor definierte forensische Ausgabeformat verwendet. Um möglichst geringe Voraussetzungen an die auf dem Zielsystem verwendete Software zu stellen, hat die Implementierung in der Programmiersprache \emph{C} zu erfolgen.
+\item Dokumentation der erstellten Software nach den Methoden des \emph{literate programming}.
+\item \emph{(optional)} Implementierung und Dokumentation einer Software, die das neue Ausgabeformat liest und die Möglichkeit bietet, den Datenstrom über Callbacks oder Vererbung interpretiert an verarbeitende Software weiterzuleiten. Letztere kann dann z.B. verwendet werden, um die protokollierten Daten am Bildschirm darzustellen oder in ein Ausgabeformat wie \LaTeX{} oder HTML zu exportieren.
+\end{enumerate}
+
+\end{document}
