@@ -1,11 +1,13 @@
 \input{article.tex}
-\pagestyle{empty}
 
 \author{Tim Weber}
-\title{Exposé}
+\date{20. November 2009}
+\title{Exposé zur Bachelorarbeit „Design and implementation of a forensic documentation tool for interactive command-line sessions“}
+
 \begin{document}
-\section*{Exposé:}
-\subsection*{Hintergrund und Motivation}
+\maketitle
+
+\section*{Hintergrund und Motivation}
 Zur lückenlosen Dokumentation forensischer Untersuchungen von Computersystemen benutzen Forensiker spezielle Software-Werkzeuge (Tools), mit der die Interaktion mit dem betroffenen System automatisch dokumentiert wird.
 Für das Betriebssystem Linux ist das möglicherweise bekannteste solche Tool die Software \emph{script}, die als Bestandteil des Paketes \emph{util-linux} bzw. \emph{util-linux-ng} auf quasi jedem Linux-System vorinstalliert ist.
 
@@ -16,11 +18,11 @@ Leider besitzt \emph{script} einige Schwächen in Hinblick auf die Verwendung al
 \item Die Dokumentation von \emph{script} ist dürftig, der Quellcode fast vollständig undokumentiert. Es findet sich keine Angabe, für welche Anwendungsszenarien \emph{script} ausgelegt ist und welchen Beschränkungen die Software unterliegt.
 \end{itemize}
 
-\subsection*{Ziel der Arbeit}
+\section*{Ziel der Arbeit}
 Im Verlauf dieser Bachelorarbeit ist eine Software zu erstellen, die in ihrer Funktionalität dem ursprünglichen \emph{script} entspricht, jedoch die o.g. Nachteile behebt.
 Der Fokus bei der Entwicklung liegt auf dem Einsatz der Software als Hilfsmittel bei forensischen Analysen.
 
-\subsection*{Konkrete Aufgabenstellung}
+\section*{Konkrete Aufgabenstellung}
 \begin{enumerate}
 \item Analyse von \emph{script}, wie es in \emph{util-linux} und \emph{util-linux-ng} enthalten ist, auf Schwächen in Hinblick auf den computerforensischen Einsatz.
 \item Beschreibung des Ausgabeformates von \emph{script} und seiner Nachteile.
