@@ -1,23 +1,46 @@
 # Phony targets.
-.PHONY: all clean texincludes expose
+.PHONY: all texincludes expose clean clean-texincludes mrproper
 
-# Currently, the project only consists of the Exposé.
-all: expose
+# Top-level documents.
+DOCS = expose thesis
+
+# “Everything” means the exposé and the thesis.
+all: $(DOCS)
 
 # Required LaTeX includes in my dotfiles repository.
-texincludes: unicode.tex article.tex
+TEXINCLUDES = unicode.tex article.tex
 
 # Try to fetch missing TeX files from my dotfiles repository.
-%.tex:
+$(TEXINCLUDES):
 	curl -o $@ http://github.com/scy/dotscy/raw/master/.tex/$@ || wget -O $@ http://github.com/scy/dotscy/raw/master/.tex/$@
 
-# The Exposé needs my includes.
-expose.pdf: texincludes
-	pdflatex expose.tex
+# A PDF needs my includes and its source file.
+$(addsuffix .pdf,$(DOCS)): %.pdf: %.tex $(TEXINCLUDES)
+	pdflatex $<
 
-# Phony Exposé target.
+# The thesis source is built using noweave.
+thesis.tex: thesis.nw $(TEXINCLUDES)
+	noweave -latex -delay -t -index thesis.nw > thesis.tex
+
+# Phony exposé target.
 expose: expose.pdf
 
-# Remove temporary TeX files and the includes.
+# Phony thesis target.
+thesis: thesis.pdf
+
+# Phony texincludes target.
+texincludes: clean-texincludes $(TEXINCLUDES)
+
+# Remove temporary TeX files.
 clean:
-	rm $(addprefix expose.,aux log out pdf) $(addsuffix .tex,unicode article)
+	# Remove aux files from PDF generation.
+	rm -f $(foreach stem,$(DOCS),$(foreach ext,aux log out pdf,$(stem).$(ext)))
+	# Remove weaved thesis TeX source.
+	rm -f thesis.tex
+
+# Remove the includes, for example to force re-fetching them.
+clean-texincludes:
+	rm -f $(TEXINCLUDES)
+
+# Make clean and also remove texincludes.
+mrproper: clean-texincludes clean
