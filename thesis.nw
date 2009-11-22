@@ -1,0 +1,22 @@
+% This uses my article.tex include.
+\input{article.tex}
+% We use noweb.
+\usepackage{noweb}
+% The fun begins.
+\begin{document}
+
+This program is well-mannered.
+The first thing it learns is how to say hello.
+<<nuscript.c>>=
+# include <stdio.h>
+# include <stdlib.h>
+
+int main(void)
+{
+    printf("Hello World!\n");
+    return EXIT_SUCCESS;
+}
+@
+
+% This is where it all ends.
+\end{document}
