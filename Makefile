@@ -16,7 +16,7 @@ $(TEXINCLUDES):
 
 # A PDF needs my includes and its source file.
 $(addsuffix .pdf,$(DOCS)): %.pdf: %.tex $(TEXINCLUDES)
-	pdflatex $<
+	pdflatex $< && pdflatex $<
 
 # The thesis source is built using noweave.
 thesis.tex: thesis.nw $(TEXINCLUDES)
