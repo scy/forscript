@@ -2,21 +2,76 @@
 \input{article.tex}
 % We use noweb.
 \usepackage{noweb}
+\def\cmd{\emph}
+\def\func{\emph}
+\def\param{\texttt}
+\def\str{\texttt}
+\def\bs{\textbackslash}
+\def\key{\texttt}
+\newcommand\ctrl[1]{\key{\char`\^#1}}
 % The fun begins.
 \begin{document}
 
-This program is well-mannered.
-The first thing it learns is how to say hello.
-<<nuscript.c>>=
-# include <stdio.h>
-# include <stdlib.h>
+\section{The \cmd{script} implementation in \emph{util-linux-ng}}
+\emph{util-linux} is the name of a collection of command-line utilities for Linux systems.
+It includes essential software like \cmd{dmesg}, \cmd{fdisk}, \cmd{mkswap}, \cmd{mount} and \cmd{shutdown} as well as the \cmd{script} and \cmd{scriptreplay} utilities.
 
-int main(void)
-{
-    printf("Hello World!\n");
-    return EXIT_SUCCESS;
-}
-@
+The original \emph{util-linux} package was abandoned in 2006.
+Today, it has been replaced by its successor \emph{util-linux-ng}, a fork of the last available \emph{util-linux} version.
+\emph {util-linux-ng} is under active development.
+The analysis of the original \cmd{script} utility in this thesis is based on the most recent \emph{util-linux} release as of the time of writing, version 2.17.
+
+\subsection{Behavior of the \emph{script} utility}
+\cmd{script} takes one optional argument, the file name of the typescript file to generate.
+If the argument is omitted, the file will be named \emph{typescript}.
+There are also several command-line switches that modify \cmd{script}’s behavior.
+
+The \param{-a} switch will pass the \emph{a} flag to \func{fopen()}’s \emph{mode} parameter instead of \emph{w}.
+If a typescript file does already exist, it will then not be overwritten; instead, the new content will be appended to the existing file.
+
+If the \param{-f} switch is used, \cmd{script} will call \func{fflush()} on the typescript file after new data has been written to it.
+This results in instant updates to the typescript file, at the expense of performance.
+
+%FIXME: Continue.
+
+\section{A new typescript file format}
+The current implementation of \cmd{script} uses a very simple typescript file format:
+Everything the client application sends to the terminal (i.e. everything printed on screen) will be written to the file, byte for byte, including control characters that are used for various tasks like setting colors, positioning the cursor etc.
+Additionally, a header \str{"Script started on XXX\bs{}n"} is written, where \str{XXX} is the human-readable date and time when \cmd{script} was invoked.
+If \cmd{script} was invoked without the \param{-q} flag, an additional footer \str{"Script done on YYY\bs{}n"}, where \str{YYY} is the human-readable date and time when \cmd{script} terminated, is written.
+
+Since this typescript format completely lacks timing information, the \param{-t} flag will output timing data to stderr.
+The user has to capture this output to a file by calling \cmd{script} like this: \str{script -t 2>timingfile}.
+
+The timing file consists of tuples of delay and byte count (space-separated), one per line:
+\begin{verbatim}
+0.725168 56
+0.006549 126
+0.040017 1
+4.727988 1
+0.047972 1
+\end{verbatim}
+Each line can be read like \emph{“\emph{x} seconds after the previous output, \emph{n} more bytes were sent to the terminal”}.
+If there was no previous output (because it is the first line of timing information), the delay specifies the time between \cmd{script} invocation and the first chunk of output.
+
+The two file formats produced by \cmd{script}, typescript and timing, show several shortcomings with regard to forensic usage:
+\begin{itemize}
+\item Input coming from the user’s keyboard is not logged at all. A common example is the user entering a command in the shell but then pressing \ctrl{C} instead of return. The shell will move to the next line and display the prompt again; there is no visible distinction whether the command was run or not.\footnote{With more recent versions of Linux and Bash, terminals which have the ECHOCTL bit set (for example via stty) will show \ctrl{C} at the end of an interrupted line, which fixes this problem to some degree. Similar issues, like finding out whether the user entered or tab-completed some text, still persist.}
+\item Metadata about the environment \cmd{script} runs in is not logged. This leads to a high level of uncertainty when interpreting the resulting typescript, because even important information like the character set and encoding or the terminal size and type is missing.
+\item Typescript and timing are separate files, but one logical entity. They should reside in one file to protect the user from confusion and mistakes.
+\item Appending to a typescript file is possible, but ambigious, since the beginning of a new part is determined only by the string \str{"Script started on~…"}. Also, appending to a typescript and recording timing information are incompatible, because \cmd{scriptreplay} will only ignore the first header line in a typescript file. Subsequent ones will disturb the timing’s byte counter.
+\end{itemize}
+
+% <<forscript.c>>=
+% # include <stdio.h>
+% # include <stdlib.h>
+% 
+% int main(void)
+% {
+%     printf("Hello World!\n");
+%     return EXIT_SUCCESS;
+% }
+% @
 
 % This is where it all ends.
 \end{document}
