@@ -62,16 +62,51 @@ The two file formats produced by \cmd{script}, typescript and timing, show sever
 \item Appending to a typescript file is possible, but ambigious, since the beginning of a new part is determined only by the string \str{"Script started on~…"}. Also, appending to a typescript and recording timing information are incompatible, because \cmd{scriptreplay} will only ignore the first header line in a typescript file. Subsequent ones will disturb the timing’s byte counter.
 \end{itemize}
 
-% <<forscript.c>>=
-% # include <stdio.h>
-% # include <stdlib.h>
-% 
-% int main(void)
-% {
-%     printf("Hello World!\n");
-%     return EXIT_SUCCESS;
-% }
-% @
+\subsection{The new file format}
+A \cmd{forscript} data file consists of the unaltered output stream of the client application, but includes blocks of metadata (called \emph{metadata blocks}) at arbitrary positions.
+A metadata block is started by the byte sequence \str{0x00 0x0e} (\emph{null, shift out}), terminated by the byte sequence \str{0x00 0x0f} (\emph{null, shift in}) and may contain several pieces of information (called \emph{data chunks}) which are described below.
+Empty metadata blocks (\str{0x00 0x0e 0x00 0x0f}) are permitted, but not useful.
+If a literal null byte (\str{0x00}) needs to appear inside or outside a metadata block, it has to be written as two null bytes instead (\str{0x00 0x00}).
+
+Data chunks may, depending on their type, be of fixed or variable length.
+They are introduced by a single byte denoting their type and may contain arbitrary byte values, although the range of allowed or useful values can be further limited depending on their type.
+All data chunks (variable \emph{and} fixed length) are terminated by the byte sequence \str{0x00 0x17} (\emph{null, end of transmission block}).
+This allows the introduction of new data chunk types while still allowing older versions of \cmd{forscript} to read the basic file structure.
+If a literal null byte (\str{0x00}) needs to appear inside a data chunk, it has to be written as two null bytes instead (\str{0x00 0x00}).
+
+A \cmd{forscript} data file needs to begin with a non-empty metadata block containing a \emph{file version} data chunk.
+
+The next sections will describe the available data chunk types.
+
+\subsubsection*{\str{0x01} File version}
+Fixed length of 1 byte.
+Needs to appear only once per file and before any other data chunks.
+Must be the only chunk in its metadata block.
+
+Denotes the version of the \cmd{forscript} file format that is being used for this file.
+Versions are represented as byte values, not ASCII numbers.
+The version number \str{0x00} is not allowed.
+This document describes version 1 of the format, therefore currently the only valid value is \str{0x01}.
+
+\subsection{Magic number}
+Since a \cmd{forscript} file has to start with a file version chunk, there is a distinctive eight-byte signature at the beginning of each file:
+\begin{verbatim}
+0x00 0x0e 0x01 0x?? 0x00 0x17 0x00 0x0f
+\end{verbatim}
+The first two bytes start a metadata block, the third one the version chunk.
+The fourth byte contains the version number and may be any value (except \str{0x00}) in the future, but is currently always \str{0x01}.
+Bytes 5 and 6 close the version chunk, bytes 7 and 8 close the metadata block.
 
 % This is where it all ends.
 \end{document}
+
+<<forscript.c>>=
+# include <stdio.h>
+# include <stdlib.h>
+
+int main(void)
+{
+    printf("Hello World!\n");
+    return EXIT_SUCCESS;
+}
+@
