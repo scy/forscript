@@ -4,8 +4,11 @@
 # Top-level documents.
 DOCS = expose thesis
 
-# “Everything” means the exposé and the thesis.
-all: $(DOCS)
+# Binaries.
+BINS = forscript
+
+# “Everything” means the exposé, the thesis and the binaries.
+all: $(DOCS) $(BINS)
 
 # Required LaTeX includes in my dotfiles repository.
 TEXINCLUDES = unicode.tex article.tex
@@ -22,6 +25,14 @@ $(addsuffix .pdf,$(DOCS)): %.pdf: %.tex $(TEXINCLUDES)
 thesis.tex: thesis.nw $(TEXINCLUDES)
 	noweave -latex -delay -t -index thesis.nw > thesis.tex
 
+# A source file is built using notangle.
+$(addsuffix .c,$(BINS)): thesis.nw
+	notangle "-R$@" "$<" > "$@"
+
+# A binary is built using the source file.
+$(BINS): %: %.c
+	gcc -o "$@" -Wall -pipe "$<"
+
 # Phony exposé target.
 expose: expose.pdf
 
@@ -31,12 +42,14 @@ thesis: thesis.pdf
 # Phony texincludes target.
 texincludes: clean-texincludes $(TEXINCLUDES)
 
-# Remove temporary TeX files.
+# Remove temporary TeX and C files.
 clean:
 	# Remove aux files from PDF generation.
 	rm -f $(foreach stem,$(DOCS),$(foreach ext,aux log out pdf,$(stem).$(ext)))
 	# Remove weaved thesis TeX source.
 	rm -f thesis.tex
+	# Remove tangled C sources.
+	rm -f $(addsuffix .c,$(BINS))
 
 # Remove the includes, for example to force re-fetching them.
 clean-texincludes:

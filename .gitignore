@@ -1,3 +1,4 @@
+*.c
 *.aux
 *.log
 *.out
@@ -6,3 +7,4 @@
 article.tex
 unicode.tex
 thesis.tex
+forscript
