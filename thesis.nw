@@ -19,7 +19,7 @@ It includes essential software like \cmd{dmesg}, \cmd{fdisk}, \cmd{mkswap}, \cmd
 The original \emph{util-linux} package was abandoned in 2006.
 Today, it has been replaced by its successor \emph{util-linux-ng}, a fork of the last available \emph{util-linux} version.
 \emph {util-linux-ng} is under active development.
-The analysis of the original \cmd{script} utility in this thesis is based on the most recent \emph{util-linux} release as of the time of writing, version 2.17.
+The analysis of the original \cmd{script} utility in this thesis is based on the most recent \emph{util-linux-ng} release as of the time of writing, version 2.17.
 
 \subsection{Behavior of the \emph{script} utility}
 \cmd{script} takes one optional argument, the file name of the typescript file to generate.
@@ -63,39 +63,171 @@ The two file formats produced by \cmd{script}, typescript and timing, show sever
 \end{itemize}
 
 \subsection{The new file format}
-A \cmd{forscript} data file consists of the unaltered output stream of the client application, but includes blocks of metadata (called \emph{metadata blocks}) at arbitrary positions.
-A metadata block is started by the byte sequence \str{0x00 0x0e} (\emph{null, shift out}), terminated by the byte sequence \str{0x00 0x0f} (\emph{null, shift in}) and may contain several pieces of information (called \emph{data chunks}) which are described below.
-Empty metadata blocks (\str{0x00 0x0e 0x00 0x0f}) are permitted, but not useful.
-If a literal null byte (\str{0x00}) needs to appear inside or outside a metadata block, it has to be written as two null bytes instead (\str{0x00 0x00}).
+A \cmd{forscript} data file (called a \emph{transcript file}) consists of the mostly unaltered output stream of the client application, but includes blocks of additional data (called \emph{control chunks}) at arbitrary positions.
+A control chunk is started by a \emph{shift out} byte (\str{0x0e}) and terminated by a \emph{shift in} byte (\str{0x0f}).
+Each control chunk is either an input chunk or a metadata chunk.
 
-Data chunks may, depending on their type, be of fixed or variable length.
-They are introduced by a single byte denoting their type and may contain arbitrary byte values, although the range of allowed or useful values can be further limited depending on their type.
-All data chunks (variable \emph{and} fixed length) are terminated by the byte sequence \str{0x00 0x17} (\emph{null, end of transmission block}).
-This allows the introduction of new data chunk types while still allowing older versions of \cmd{forscript} to read the basic file structure.
-If a literal null byte (\str{0x00}) needs to appear inside a data chunk, it has to be written as two null bytes instead (\str{0x00 0x00}).
+Input chunks contain the data that is sent to the client application’s input stream, which is usually identical to the user’s keyboard input.
+They are of arbitrary length and terminate at the \emph{shift in} byte.
+If a literal \emph{shift out} or \emph{shift in} byte needs to appear in an input chunk’s data, it is escaped by prepending a \emph{data link escape} byte (\str{0x10}).
+If a literal \emph{data link escape} byte needs to appear in an input chunk’s data, it has to be doubled (i.e., \str{0x10 0x10}).
+For example, if the user sends the byte sequence \str{0x4e 0x0f 0x00 0x61 0x74 0x10}, the complete input chunk that will be written to the transcript file is \str{0x0e 0x4e 0x10 0x0f 0x00 0x61 0x74 0x10 0x10 0x0f}.
 
-A \cmd{forscript} data file needs to begin with a non-empty metadata block containing a \emph{file version} data chunk.
+Metadata chunks, also called meta chunks, contain additional information about the file or the application’s status, for example environment variables, terminal settings or time stamps.
+They contain an additional \emph{shift out} byte at the beginning, followed by a byte that determines the type of metadata that follows.
+The available types are described below.
+Meta chunks are of arbitrary length and terminate at the \emph{shift in} byte.
+The same escaping of \emph{shift out}, \emph{shift in} and \emph{data link escape} that is used for input chunks is also used for meta chunks.
+For example, the “terminal size” meta type is introduced by its type byte \str{0x11}, followed by width and heigth of the terminal, represented as two unsigned big-endian 16-bit integers.
+The information “terminal size is 80×16 characters” would be written to the transcript file as \str{0x0e 0x0e 0x11 0x00 0x50 0x00 0x10 0x10 0x0f}.
+Note that the least significant byte of the number 16 has to be written as \str{0x10 0x10} to prevent the special meaning of \str{0x10} to escape the following \str{0x0f}.
 
-The next sections will describe the available data chunk types.
+This basic file format design has several advantages:
+\begin{itemize}
+\item New meta chunk types can be introduced while still allowing older tools to read the file, because the escaping rules are simple and the parsing application need not know a fixed length of each type.
+\item Since switching between input and output data occurs very often in a usual terminal session, the format is designed to require very little storage overhead for these operations.
+\item The format is very compact and easy to implement. Using a format like XML would decrease performance and require sophisticated libraries on the machine \cmd{forscript} is run on. However, for forensic usage it is best to be able to use a small statically linked executable.
+\item Converting a \cmd{forscript} file to a \cmd{script} file is basically as easy as removing everything between \emph{shift out} and \emph{shift in} bytes (while respecting escaping rules, of course).
+\end{itemize}
 
-\subsubsection*{\str{0x01} File version}
-Fixed length of 1 byte.
-Needs to appear only once per file and before any other data chunks.
-Must be the only chunk in its metadata block.
+A transcript file needs to begin with a \emph{file version} meta chunk, followed directly by the first \emph{start of session} chunk.
+
+For improved readability, we define the special characters as constants:
+<<constants>>=
+const char SO  = 0x0e;
+const char SI  = 0x0f;
+const char DLE = 0x10;
+@
+
+It is by design that the three special characters have consecutive byte numbers.
+This allows us to define a minimum and maximum byte value that requires special escape handling:
+<<constants>>=
+const char ESCMIN = 0x0e;
+const char ESCMAX = 0x10;
+@
+
+The function \emph{chunkw()} takes a pointer and a byte count as arguments and writes chunk data to the transcript file, applying required escapes on the fly.
+To improve performance, it does not write byte-per-byte, but instead scans the input data until it finds a special character.
+When it does, it writes everything up to, but not including, the special character to the file and then adds a DLE character.
+The search then goes on.
+If another special character is found, everything from the last special character (inclusive) to the current one (exclusive) plus a DLE is written.
+Eventually the whole input data will have been scanned and the function terminates after writing everything from the last special character (inclusive) or the beginning of the data (if there were no special characters) to the end of the input data.
+This is the code:
+<<chunkw>>=
+int chunkw(char *data, int count) {
+	int escaped = 0;
+	int pos = 0;
+	int start = 0;
+	while (pos < count) {
+		if (data[pos] <= ESCMAX && data[pos] >= ESCMIN) {
+			if (pos > start) {
+				if (!swrite(&data[start], sizeof(char), pos - start, OUTF))
+					return -1;
+			}
+			if (!swrite(&DLE, sizeof(DLE), 1, OUTF))
+				return -2;
+			start = pos;
+			escaped++;
+		}
+		pos++;
+	}
+	if (!swrite(&data[start], sizeof(char), pos - start, OUTF))
+		return -3;
+	return escaped;
+}
+@
+\emph{OUTF} is the already opened transcript file and a global variable:
+<<globals>>=
+FILE *OUTF;
+@
+
+The \emph{swrite()} function (“safe write”) that is being used here will return zero if the number of items written is not equal to the number of items that \emph{should} have been written:
+<<swrite>>=
+int swrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
+	return (fwrite(ptr, size, nmemb, stream) == nmemb);
+}
+@
+
+For each chunk type \emph{nn}, there is a function \emph{chunk\emph{nn}()} that calls \emph{chunkw()} to write the data, including possibly required escapes, to the output file.
+A chunk function will return the number of bytes written on success and a negative number if an error occured.
+Since every chunk needs its start and end byte, the following wrapper macro is used:
+<<chunkwrapper>>=
+int chunkwrapper(int (*func)(), char id) {
+	if (!swrite(&SO, sizeof(SO), 1, OUTF))
+		return -1;
+	if (!swrite(&id, sizeof(char), 1, OUTF))
+		return -2;
+	if (func() < 0)
+		return -3;
+	if (!swrite(&SI, sizeof(SI), 1, OUTF))
+		return -4;
+	return 0;
+}
+
+#define chunk(id) chunkwrapper(&chunk##id, 0x##id)
+@
+
+The next sections will describe the available metadata chunk types.
+Integers are unsigned and big endian, except where noted otherwise.
+Numbers are represented in binary form, not as ASCII digits.
+
+\subsubsection*{\str{0x01} File version (1 byte)}
+The transcript file must start with a meta chunk of this type; there may be no other data before it.
 
 Denotes the version of the \cmd{forscript} file format that is being used for this file.
-Versions are represented as byte values, not ASCII numbers.
-The version number \str{0x00} is not allowed.
+In order to guarantee a length of exactly one byte, the version numbers 0, 14, 15 and 16 are not allowed, therefore no escaping takes place.
 This document describes version 1 of the format, therefore currently the only valid value is \str{0x01}.
 
+<<chunks>>=
+int chunk01() {
+	return chunkw("\x01", sizeof(char));
+}
+@
+
+\subsubsection*{\str{0x02} Begin of session}
+Denotes the start of a new \cmd{forscript} session.
+The data bytes represent the start time as the number of seconds since the Unix Epoch.
+
+<<chunks>>=
+int chunk02() {
+	uint32_t be = htonl(time(NULL));
+	return chunkw((char*)&be, sizeof(be));
+}
+@
+
+This chunk requires \emph{time.h}:
+<<includes>>=
+#include <time.h>
+@
+
+\subsubsection*{\str{0x11} Terminal size (two 2-byte values)}
+Is written at session beginning and when the size of the terminal window changes.
+The first data word contains the number of colums, the second one the number of rows.
+
+<<chunks>>=
+int chunk11() {
+	struct winsize size;
+	uint32_t be;
+	if (ioctl(0, TIOCGWINSZ, &size) < 0)
+		return -1;
+	be = (htons(size.ws_col) << 16) | htons(size.ws_row);
+	return chunkw((char*)&be, sizeof(be));
+}
+@
+
+This chunk requires \emph{ioctl.h}:
+<<includes>>=
+#include <sys/ioctl.h>
+@
+
 \subsection{Magic number}
-Since a \cmd{forscript} file has to start with a file version chunk, there is a distinctive eight-byte signature at the beginning of each file:
+Since a \cmd{forscript} file has to start with a file version chunk followed by a begin of session chunk, there is a distinctive six-byte signature at the beginning of each file:
 \begin{verbatim}
-0x00 0x0e 0x01 0x?? 0x00 0x17 0x00 0x0f
+0x0e 0x01 0x?? 0x0f 0x0e 0x02
 \end{verbatim}
-The first two bytes start a metadata block, the third one the version chunk.
-The fourth byte contains the version number and may be any value (except \str{0x00}) in the future, but is currently always \str{0x01}.
-Bytes 5 and 6 close the version chunk, bytes 7 and 8 close the metadata block.
+The first byte starts a metadata chunk, the second one identifies it as a file version chunk.
+The third byte contains the version number, which is currently \str{0x01} but may change in the future.
+Byte 4 closes the version chunk, 5 and 6 start a begin of session chunk.
 
 % This is where it all ends.
 \end{document}
@@ -103,9 +235,28 @@ Bytes 5 and 6 close the version chunk, bytes 7 and 8 close the metadata block.
 <<forscript.c>>=
 # include <stdio.h>
 # include <stdlib.h>
+# include <arpa/inet.h>
+<<includes>>
+
+<<constants>>
+
+<<globals>>
+extern FILE *stdout;
+
+<<swrite>>
+
+<<chunkw>>
+
+<<chunks>>
+
+<<chunkwrapper>>
 
 int main(void)
 {
+    OUTF = stdout;
+    chunk(01);
+    chunk(02);
+    chunk(11);
     printf("Hello World!\n");
     return EXIT_SUCCESS;
 }
