@@ -119,7 +119,7 @@ If another special character is found, everything from the last special characte
 Eventually the whole input data will have been scanned and the function terminates after writing everything from the last special character (inclusive) or the beginning of the data (if there were no special characters) to the end of the input data.
 This is the code:
 <<chunkw>>=
-int chunkw(char *data, int count) {
+int chunkw(unsigned char *data, int count) {
 	int escaped = 0;
 	int pos = 0;
 	int start = 0;
@@ -153,8 +153,38 @@ int swrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
 }
 @
 
-For each meta chunk type \emph{nn}, there is a function \emph{chunk\emph{nn}()} that calls \emph{chunkw()} to write the data, including possibly required escapes, to the output file.
-A chunk function will return the number of bytes written on success and a negative number if an error occured.
+There are functions to write chunk headers and footers:
+<<chunkwhf>>=
+int chunkwh(unsigned char id) {
+	int ret;
+	ret = swrite(&SO, sizeof(SO), 1, OUTF);
+	if (!ret)
+		return ret;
+	return swrite(&id, sizeof(unsigned char), 1, OUTF);
+}
+
+int chunkwf() {
+	return swrite(&SI, sizeof(SI), 1, OUTF);
+}
+@
+
+There is also a convenience function that writes a meta chunk’s header and footer as well as the actual data:
+<<chunkwm>>=
+int chunkwm(unsigned char id, unsigned char *data, int count) {
+	int ret;
+	if (!chunkwh(id))
+		return -101;
+	ret = chunkw(data, count);
+	if (ret < 0)
+		return ret;
+	if (!chunkwf())
+		return -102;
+	return 0;
+}
+@
+
+For each meta chunk type \emph{nn}, there is a function \emph{chunk\emph{nn}()} that is responsible for calling \func{chunkmw()} with the data that should be written to the transcript file.
+Next, \emph{chunkw()} is called to write the data, including possibly required escapes, to the output file.
 Since a meta chunk needs its start and end bytes, a wrapper function is created to write these.
 It uses a function pointer to call the actual chunk function.
 <<chunkwrapper>>=
@@ -169,10 +199,6 @@ int chunkwrapper(int (*func)(), char id) {
 		return -4;
 	return 0;
 }
-@
-The following macro is used to make calls to chunk functions more readable:
-<<chunkwrapper>>=
-#define chunk(id) chunkwrapper(&chunk##id, 0x##id)
 @
 
 \subsection{Metadata chunk types}
@@ -189,28 +215,48 @@ This document describes version 1 of the format, therefore currently the only va
 
 <<chunks>>=
 int chunk01() {
-	return chunkw("\x01", sizeof(char));
+	unsigned char ver = 0x01;
+	return chunkwm(0x01, &ver, sizeof(ver));
 }
 @
 
-\subsubsection*{\str{0x02} Begin of session}
+\subsubsection*{\str{0x02} Begin of session (10 byte)}
 Denotes the start of a new \cmd{forscript} session.
-The data bytes represent the start time as the number of seconds since the Unix Epoch.
+The first four data bytes represent the start time as the number of seconds since the Unix Epoch.
+The next four bytes contain a signed representation of the nanosecond offset to the number of seconds.
+If these four bytes are set to \str{0xffffffff}, there was an error retrieving the nanoseconds.
+The last two bytes specify the machine’s (signed) time zone offset to UTC in minutes.
+If these two bytes are set to \str{0xffff}, the machine’s timezone is unknown.
 
 <<chunks>>=
 int chunk02() {
-	uint32_t be = htonl(time(NULL));
-	return chunkw((char*)&be, sizeof(be));
+	struct timespec now;
+	int r;
+	unsigned char data[10];
+	uint32_t secs;
+	int32_t nanos = ~0;
+	int16_t tzone = ~0;
+	r = clock_gettime(CLOCK_REALTIME, &now);
+	if (r < 0)
+		return r;
+	secs = htonl(now.tv_sec);
+	if (now.tv_nsec < 2000000000 && now.tv_nsec > -2000000000)
+		nanos = htonl(now.tv_nsec);
+	memcpy(&data[0], &secs, sizeof(secs));
+	memcpy(&data[4], &nanos, sizeof(nanos));
+	memcpy(&data[8], &tzone, sizeof(tzone));
+	return chunkwm(0x02, data, sizeof(data));
 }
 @
 
-This chunk requires \emph{time.h}:
+This chunk requires \emph{time.h} and \emph{string.h}:
 <<includes>>=
+#include <string.h>
 #include <time.h>
 @
 
 \subsubsection*{\str{0x11} Terminal size (two 2-byte values)}
-Is written at session beginning and when the size of the terminal window changes.
+Is written at session start and when the size of the terminal window changes.
 The first data word contains the number of colums, the second one the number of rows.
 
 <<chunks>>=
@@ -220,13 +266,63 @@ int chunk11() {
 	if (ioctl(0, TIOCGWINSZ, &size) < 0)
 		return -1;
 	be = (htons(size.ws_col) << 16) | htons(size.ws_row);
-	return chunkw((char*)&be, sizeof(be));
+	return chunkwm(0x11, (unsigned char *)&be, sizeof(be));
 }
 @
 
 This chunk requires \emph{ioctl.h}:
 <<includes>>=
 #include <sys/ioctl.h>
+@
+
+\subsubsection*{\str{0x12} Environment variables (arbitrary number of C strings)}
+Is written at session start.
+Contains the environment variables and their values as \str{NAME=value} pairs, each pair is terminated by a null byte (\str{0x00}).
+
+<<chunks>>=
+int chunk12() {
+	extern char **environ;
+	int i = 0;
+	int r;
+	while (environ[i] != NULL) {
+		if (i == 0) {
+			r = chunkwh(0x12);
+		}
+		r = chunkw((unsigned char *)environ[i], strlen(environ[i]) + 1);
+		i++;
+	}
+	if (i != 0) {
+		r = chunkwf();
+	}
+	return 0;
+}
+@
+
+\subsubsection*{\str{0x13} Locale settings (seven C strings)}
+Is written at session start.
+Contains the string values of several locale settings, namely \str{LC\_ALL}, \str{LC\_COLLATE}, \str{LC\_CTYPE}, \str{LC\_MESSAGES}, \str{LC\_MONETARY}, \str{LC\_NUMERIC} and \str{LC\_TIME}, in that order.
+
+<<chunks>>=
+#define chunk13w(type) loc = setlocale(LC_##type, ""); r = chunkw((unsigned char *)loc, strlen(loc) + 1);
+int chunk13() {
+	char *loc;
+	int r;
+	r = chunkwh(0x13);
+	chunk13w(ALL);
+	chunk13w(COLLATE);
+	chunk13w(CTYPE);
+	chunk13w(MESSAGES);
+	chunk13w(MONETARY);
+	chunk13w(NUMERIC);
+	chunk13w(TIME);
+	r = chunkwf();
+	return 0;
+}
+@
+
+This chunk requires \emph{locale.h}:
+<<includes>>=
+#include <locale.h>
 @
 
 \subsection{Magic number}
@@ -254,6 +350,10 @@ extern FILE *stdout;
 
 <<chunkw>>
 
+<<chunkwhf>>
+
+<<chunkwm>>
+
 <<chunks>>
 
 <<chunkwrapper>>
@@ -261,9 +361,11 @@ extern FILE *stdout;
 int main(void)
 {
 	OUTF = stdout;
-	chunk(01);
-	chunk(02);
-	chunk(11);
+	chunk01();
+	chunk02();
+	chunk11();
+	chunk12();
+	chunk13();
 	return EXIT_SUCCESS;
 }
 @

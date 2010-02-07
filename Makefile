@@ -31,7 +31,7 @@ $(addsuffix .c,$(BINS)): thesis.nw
 
 # A binary is built using the source file.
 $(BINS): %: %.c
-	gcc -o "$@" -Wall -pipe "$<"
+	gcc -lrt -g -o "$@" -Wall -Wextra -pedantic -fstack-protector-all -pipe "$<"
 
 # Phony exposé target.
 expose: expose.pdf
