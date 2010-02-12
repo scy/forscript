@@ -98,16 +98,16 @@ A transcript file needs to begin with a \emph{file version} meta chunk, followed
 
 For improved readability, we define the special characters as constants:
 <<constants>>=
-const char SO  = 0x0e;
-const char SI  = 0x0f;
-const char DLE = 0x10;
+const unsigned char SO  = 0x0e;
+const unsigned char SI  = 0x0f;
+const unsigned char DLE = 0x10;
 @
 
 It is by design that the three special characters have consecutive byte numbers.
 This allows us to define a minimum and maximum byte value that requires special escape handling:
 <<constants>>=
-const char ESCMIN = 0x0e;
-const char ESCMAX = 0x10;
+const unsigned char ESCMIN = 0x0e;
+const unsigned char ESCMAX = 0x10;
 @
 
 \subsubsection{How a \cmd{forscript} file is written}
@@ -152,6 +152,10 @@ int swrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
 	return (fwrite(ptr, size, nmemb, stream) == nmemb);
 }
 @
+To be able to use \func{fwrite()}, \emph{stdio.h} has to be included:
+<<includes>>=
+#include <stdio.h>
+@
 
 There are functions to write chunk headers and footers:
 <<chunkwhf>>=
@@ -179,32 +183,44 @@ int chunkwm(unsigned char id, unsigned char *data, int count) {
 		return ret;
 	if (!chunkwf())
 		return -102;
-	return 0;
+	return 1;
 }
 @
 
-For each meta chunk type \emph{nn}, there is a function \emph{chunk\emph{nn}()} that is responsible for calling \func{chunkmw()} with the data that should be written to the transcript file.
-Next, \emph{chunkw()} is called to write the data, including possibly required escapes, to the output file.
-Since a meta chunk needs its start and end bytes, a wrapper function is created to write these.
-It uses a function pointer to call the actual chunk function.
-<<chunkwrapper>>=
-int chunkwrapper(int (*func)(), char id) {
-	if (!swrite(&SO, sizeof(SO), 1, OUTF))
-		return -1;
-	if (!swrite(&id, sizeof(char), 1, OUTF))
-		return -2;
-	if (func() < 0)
-		return -3;
-	if (!swrite(&SI, sizeof(SI), 1, OUTF))
-		return -4;
-	return 0;
+If the program has to terminate abnormally, the function \func{die()} will be called.
+It will output an error message and exit the software.
+<<die>>=
+void die(char *message, int chunk) {
+	fprintf(stderr, "%s: ", "forscript");
+	if (chunk != 0) {
+		fprintf(stderr, "metadata chunk %02x failed", chunk);
+		if (message != NULL)
+			fprintf(stderr, ": ");
+	} else {
+		if (message == NULL)
+			fprintf(stderr, "unknown error");
+	}
+	if (message != NULL)
+		fprintf(stderr, message);
+	fprintf(stderr, "; exiting.\n");
+	exit(EXIT_FAILURE);
 }
+@
+\func{exit()} requires \emph{stdlib.h}:
+<<includes>>=
+#include <stdlib.h>
 @
 
 \subsection{Metadata chunk types}
 The next sections will describe the available metadata chunk types.
 Integers are unsigned and big endian, except where noted otherwise.
 Numbers are represented in binary form, not as ASCII digits.
+
+Chunk functions return a negative value if an error occured, \cmd{forscript} should terminate then.
+For convenience, we define the following macro that will call \func{die()} and supply it with the chunk’s type.
+<<chunks>>=
+#define chunk(num) if (chunk##num() < 0) die(NULL, 0x##num);
+@
 
 \subsubsection*{\str{0x01} File version (1 byte)}
 The transcript file must start with a meta chunk of this type; there may be no other data before it.
@@ -231,14 +247,14 @@ If these two bytes are set to \str{0xffff}, the machine’s timezone is unknown.
 <<chunks>>=
 int chunk02() {
 	struct timespec now;
-	int r;
+	int ret;
 	unsigned char data[10];
 	uint32_t secs;
 	int32_t nanos = ~0;
 	int16_t tzone = ~0;
-	r = clock_gettime(CLOCK_REALTIME, &now);
-	if (r < 0)
-		return r;
+	ret = clock_gettime(CLOCK_REALTIME, &now);
+	if (ret < 0)
+		return ret;
 	secs = htonl(now.tv_sec);
 	if (now.tv_nsec < 2000000000 && now.tv_nsec > -2000000000)
 		nanos = htonl(now.tv_nsec);
@@ -249,10 +265,15 @@ int chunk02() {
 }
 @
 
-This chunk requires \emph{time.h} and \emph{string.h}:
+This chunk requires \emph{time.h} for \func{clock\bs{}gettime()}, \emph{inet.h} for \func{htonl()} and \emph{string.h} for \func{memcpy()}:
 <<includes>>=
-#include <string.h>
 #include <time.h>
+#include <arpa/inet.h>
+#include <string.h>
+@
+Additionally, \emph{glibc} requires the following feature test macro to be defined in order to expose \func{clock\bs{}gettime()}:
+<<featuretest>>=
+#define _POSIX_C_SOURCE 199309L
 @
 
 \subsubsection*{\str{0x11} Terminal size (two 2-byte values)}
@@ -270,7 +291,7 @@ int chunk11() {
 }
 @
 
-This chunk requires \emph{ioctl.h}:
+This chunk requires \emph{ioctl.h} for \func{ioctl()}:
 <<includes>>=
 #include <sys/ioctl.h>
 @
@@ -283,16 +304,22 @@ Contains the environment variables and their values as \str{NAME=value} pairs, e
 int chunk12() {
 	extern char **environ;
 	int i = 0;
-	int r;
+	int ret;
 	while (environ[i] != NULL) {
 		if (i == 0) {
-			r = chunkwh(0x12);
+			ret = chunkwh(0x12);
+			if (!ret)
+				return -1;
 		}
-		r = chunkw((unsigned char *)environ[i], strlen(environ[i]) + 1);
+		ret = chunkw((unsigned char *)environ[i], strlen(environ[i]) + 1);
+		if (ret < 0)
+			return ret;
 		i++;
 	}
 	if (i != 0) {
-		r = chunkwf();
+		ret = chunkwf();
+		if (!ret)
+			return -1;
 	}
 	return 0;
 }
@@ -304,11 +331,11 @@ Contains the string values of several locale settings, namely \str{LC\_ALL}, \st
 
 <<chunks>>=
 #define chunk13w(type) loc = setlocale(LC_##type, ""); \
-        r = chunkw((unsigned char *)loc, strlen(loc) + 1);
+        ret = chunkw((unsigned char *)loc, strlen(loc) + 1);
 int chunk13() {
 	char *loc;
-	int r;
-	r = chunkwh(0x13);
+	int ret;
+	ret = chunkwh(0x13);
 	chunk13w(ALL);
 	chunk13w(COLLATE);
 	chunk13w(CTYPE);
@@ -316,7 +343,7 @@ int chunk13() {
 	chunk13w(MONETARY);
 	chunk13w(NUMERIC);
 	chunk13w(TIME);
-	r = chunkwf();
+	ret = chunkwf();
 	return 0;
 }
 @
@@ -342,15 +369,15 @@ Byte 4 closes the version chunk, 5 and 6 start a begin of session chunk.
 
 \section{The complete forscript.c}
 <<forscript.c>>=
-# include <stdio.h>
-# include <stdlib.h>
-# include <arpa/inet.h>
+<<featuretest>>
 <<includes>>
 
 <<constants>>
 
 <<globals>>
 extern FILE *stdout;
+
+<<die>>
 
 <<swrite>>
 
@@ -362,16 +389,14 @@ extern FILE *stdout;
 
 <<chunks>>
 
-<<chunkwrapper>>
-
 int main(void)
 {
 	OUTF = stdout;
-	chunk01();
-	chunk02();
-	chunk11();
-	chunk12();
-	chunk13();
+	chunk(01);
+	chunk(02);
+	chunk(11);
+	chunk(12);
+	chunk(13);
 	return EXIT_SUCCESS;
 }
 @
