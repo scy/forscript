@@ -161,9 +161,11 @@ There are functions to write chunk headers and footers:
 <<chunkwhf>>=
 int chunkwh(unsigned char id) {
 	int ret;
-	ret = swrite(&SO, sizeof(SO), 1, OUTF);
-	if (!ret)
-		return ret;
+	for (int i = 0; i < 2; i++) {
+		ret = swrite(&SO, sizeof(SO), 1, OUTF);
+		if (!ret)
+			return ret;
+	}
 	return swrite(&id, sizeof(unsigned char), 1, OUTF);
 }
 
@@ -374,13 +376,13 @@ Contains the number of seconds and nanoseconds that have passed since the last d
 A replaying application should wait for the time specified in this chunk before advancing further in the transcript file.
 
 \subsection{Magic number}
-Since a \cmd{forscript} file has to start with a file version chunk followed by a begin of session chunk, there is a distinctive six-byte signature at the beginning of each file:
+Since a \cmd{forscript} file has to start with a file version chunk followed by a begin of session chunk, there is a distinctive eight-byte signature at the beginning of each file:
 \begin{verbatim}
-0x0e 0x01 0x?? 0x0f 0x0e 0x02
+0x0e 0x0e 0x01 0x?? 0x0f 0x0e 0x0e 0x02
 \end{verbatim}
-The first byte starts a metadata chunk, the second one identifies it as a file version chunk.
-The third byte contains the version number, which is currently \str{0x01} but may change in the future.
-Byte 4 closes the version chunk, 5 and 6 start a begin of session chunk.
+The first two bytes start a metadata chunk, the third one identifies it as a file version chunk.
+The fourth byte contains the version number, which is currently \str{0x01} but may change in the future.
+Byte 5 closes the version chunk, 5 to 8 start a begin of session chunk.
 
 \section{The complete forscript.c}
 <<forscript.c>>=
