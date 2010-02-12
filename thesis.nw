@@ -280,13 +280,13 @@ int chunk02() {
 }
 @
 
-This chunk requires \emph{time.h} for \func{clock\bs{}gettime()}, \emph{inet.h} for \func{htonl()} and \emph{string.h} for \func{memcpy()}:
+This chunk requires \emph{time.h} for \func{clock\_gettime()}, \emph{inet.h} for \func{htonl()} and \emph{string.h} for \func{memcpy()}:
 <<includes>>=
 #include <time.h>
 #include <arpa/inet.h>
 #include <string.h>
 @
-Additionally, \emph{glibc} requires the following feature test macro to be defined in order to expose \func{clock\bs{}gettime()}:
+Additionally, \emph{glibc} requires the following feature test macro to be defined in order to expose \func{clock\_gettime()}:
 <<featuretest>>=
 #define _POSIX_C_SOURCE 199309L
 @
