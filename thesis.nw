@@ -264,6 +264,7 @@ If these two bytes are set to \str{0xffff}, the machine’s timezone is unknown.
 <<chunks>>=
 int chunk02() {
 	struct timespec now;
+	extern long timezone;
 	int ret;
 	unsigned char data[10];
 	uint32_t secs;
@@ -275,6 +276,8 @@ int chunk02() {
 	secs = htonl(now.tv_sec);
 	if (now.tv_nsec < 2000000000 && now.tv_nsec > -2000000000)
 		nanos = htonl(now.tv_nsec);
+	tzset();
+	tzone = htons((uint16_t)(timezone / -60));
 	memcpy(&data[0], &secs, sizeof(secs));
 	memcpy(&data[4], &nanos, sizeof(nanos));
 	memcpy(&data[8], &tzone, sizeof(tzone));
