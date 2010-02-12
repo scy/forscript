@@ -191,7 +191,7 @@ If the program has to terminate abnormally, the function \func{die()} will be ca
 It will output an error message and exit the software.
 <<die>>=
 void die(char *message, int chunk) {
-	fprintf(stderr, "%s: ", "forscript");
+	fprintf(stderr, "%s: ", MYNAME);
 	if (chunk != 0) {
 		fprintf(stderr, "metadata chunk %02x failed", chunk);
 		if (message != NULL)
@@ -209,6 +209,21 @@ void die(char *message, int chunk) {
 \func{exit()} requires \emph{stdlib.h}:
 <<includes>>=
 #include <stdlib.h>
+@
+The global variable \emph{MYNAME} contains a pointer to the name the binary was called as.
+<<globals>>=
+char *MYNAME;
+@
+It is set in \func{main()}:
+<<setmyname>>=
+MYNAME = argv[0];
+@
+If \cmd{forscript} was called using a path name, everything up to the final slash needs to be cut off by moving the pointer accordingly:
+<<setmyname>>=
+{ char *lastslash;
+	if ((lastslash = strrchr(MYNAME, '/')) != NULL)
+		MYNAME = lastslash + 1;
+}
 @
 
 \subsection{Metadata chunk types}
@@ -389,8 +404,9 @@ extern FILE *stdout;
 
 <<chunks>>
 
-int main(void)
+int main(int argc, char *argv[])
 {
+	<<setmyname>>
 	OUTF = stdout;
 	chunk(01);
 	chunk(02);
