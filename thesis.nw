@@ -220,7 +220,7 @@ int chunk01() {
 }
 @
 
-\subsubsection*{\str{0x02} Begin of session (10 byte)}
+\subsubsection*{\str{0x02} Begin of session (10 bytes)}
 Denotes the start of a new \cmd{forscript} session.
 The first four data bytes represent the start time as the number of seconds since the Unix Epoch.
 The next four bytes contain a signed representation of the nanosecond offset to the number of seconds.
@@ -303,7 +303,8 @@ Is written at session start.
 Contains the string values of several locale settings, namely \str{LC\_ALL}, \str{LC\_COLLATE}, \str{LC\_CTYPE}, \str{LC\_MESSAGES}, \str{LC\_MONETARY}, \str{LC\_NUMERIC} and \str{LC\_TIME}, in that order.
 
 <<chunks>>=
-#define chunk13w(type) loc = setlocale(LC_##type, ""); r = chunkw((unsigned char *)loc, strlen(loc) + 1);
+#define chunk13w(type) loc = setlocale(LC_##type, ""); \
+        r = chunkw((unsigned char *)loc, strlen(loc) + 1);
 int chunk13() {
 	char *loc;
 	int r;
@@ -324,6 +325,11 @@ This chunk requires \emph{locale.h}:
 <<includes>>=
 #include <locale.h>
 @
+
+\subsubsection*{\str{0x16} Delay (two 4-byte values)}
+Contains the number of seconds and nanoseconds that have passed since the last delay chunk (or, if this is the first one, since the session started).
+
+A replaying application should wait for the time specified in this chunk before advancing further in the transcript file.
 
 \subsection{Magic number}
 Since a \cmd{forscript} file has to start with a file version chunk followed by a begin of session chunk, there is a distinctive six-byte signature at the beginning of each file:
