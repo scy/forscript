@@ -48,7 +48,7 @@ This results in instant updates to the typescript file, at the expense of perfor
 
 \subsection{File formats}
 The current implementation of \cmd{script} uses a very simple typescript file format:
-Everything the client application sends to the terminal (i.e. everything printed on screen) will be written to the file, byte for byte, including control characters that are used for various tasks like setting colors, positioning the cursor etc.
+Everything the client application sends to the terminal (i.e. everything printed on screen) will be written to the file, byte by byte, including control characters that are used for various tasks like setting colors, positioning the cursor etc.
 Additionally, a header \str{"Script started on XXX\bs{}n"} is written, where \str{XXX} is the human-readable date and time when \cmd{script} was invoked.
 If \cmd{script} was invoked without the \param{-q} flag, an additional footer \str{"Script done on YYY\bs{}n"}, where \str{YYY} is the human-readable date and time when \cmd{script} terminated, is written.
 
