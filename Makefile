@@ -23,7 +23,7 @@ $(addsuffix .pdf,$(DOCS)): %.pdf: %.tex $(TEXINCLUDES)
 
 # The thesis source is built using noweave.
 thesis.tex: thesis.nw $(TEXINCLUDES)
-	noweave -latex -delay -t2 -index thesis.nw > thesis.tex
+	noweave -latex -delay -t2 -autodefs c -index thesis.nw > thesis.tex
 
 # A source file is built using notangle.
 $(addsuffix .c,$(BINS)): thesis.nw
