@@ -417,6 +417,22 @@ This is done by moving the pointer to the character immediately following the fi
 }
 @
 
+\subsubsection{Command line arguments}
+Since \cmd{forscript}’s invocation tries to mimic \cmd{script}’s as far as possible, command line argument handling is designed to closely resemble \cmd{script}’s behavior as far as possible.
+Therefore, like in \cmd{script}, the command line switches \str{--version} and \str{-V} are treated seperately.
+If there is exactly one command line argument and it is one of these, \cmd{forscript} will print its version and terminate.
+<<getopt>>=
+if ((argc == 2) && \
+    (!strcmp(argv[1], "-V") || !strcmp(argv[1], "--version"))) {
+	printf("%s %s\n", MYNAME, MYVERSION);
+	return 0;
+}
+@
+[[MYVERSION]] is defined as a global constant:
+<<globals>>=
+const char *MYVERSION = "0.1-git";
+@
+
 <<forscript.c>>=
 <<featuretest>>
 <<includes>>
@@ -441,6 +457,7 @@ extern FILE *stdout;
 int main(int argc, char *argv[])
 {
 	<<setmyname>>
+	<<getopt>>
 	OUTF = stdout;
 	chunk(01);
 	chunk(02);
