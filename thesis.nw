@@ -422,7 +422,7 @@ Since \cmd{forscript}’s invocation tries to mimic \cmd{script}’s as far as p
 Therefore, like in \cmd{script}, the command line switches \str{--version} and \str{-V} are treated seperately.
 If there is exactly one command line argument and it is one of these, \cmd{forscript} will print its version and terminate.
 <<getopt>>=
-if ((argc == 2) && \
+if ((argc == 2) &&
     (!strcmp(argv[1], "-V") || !strcmp(argv[1], "--version"))) {
 	printf("%s %s\n", MYNAME, MYVERSION);
 	return 0;
@@ -431,6 +431,57 @@ if ((argc == 2) && \
 [[MYVERSION]] is defined as a global constant:
 <<globals>>=
 const char *MYVERSION = "0.1-git";
+@
+
+The other options are parsed using the normal [[getopt()]] method, which requires \str{unistd.h}:
+<<includes>>=
+#include <unistd.h>
+@
+
+[[getopt()]] returns the next option character each time it is called, and $-1$ if there are none left.
+The option characters are handled in a [[switch]] statement.
+As in \cmd{script}, flags that turn on some behavior cause a respective global [[int]] variable to be increased by one.
+These flags are:
+<<globals>>=
+int aflg = 0, fflg = 0, qflg = 0;
+@
+
+The value of the \str{-c} parameter is stored in a global string:
+<<globals>>=
+char *cflg = NULL;
+@
+
+The \str{-t} flag is accepted for compatibility reasons, but has no effect in \cmd{forscript} because timing information is always written.
+
+After the loop terminates, [[optind]] arguments have been parsed.
+[[argc]] and [[argv]] are then modified accordingly to only handle non-option arguments (in \cmd{forscript} this is only the file name).
+
+The parsing loop therefore looks like this:
+<<getopt>>=
+{ int c; extern char *optarg; extern int optind;
+	while ((c = getopt(argc, argv, "ac:fqt")) != -1)
+		switch ((char)c) {
+		case 'a':
+			aflg++; break;
+		case 'c':
+			cflg = optarg; break;
+		case 'f':
+			fflg++; break;
+		case 'q':
+			qflg++; break;
+		case 't':
+			break;
+		case '?':
+		default:
+			fprintf(stderr,
+			        "usage: %s [-afqt] [-c command] [file]\n",
+			        MYNAME);
+			exit(1);
+			break;
+		}
+	argc -= optind;
+	argv += optind;
+}
 @
 
 <<forscript.c>>=
