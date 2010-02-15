@@ -107,150 +107,20 @@ This basic file format design has several advantages:
 \item Converting a \cmd{forscript} file to a \cmd{script} file is basically as easy as removing everything between \emph{shift out} and \emph{shift in} bytes (while respecting escaping rules, of course).
 \end{itemize}
 
-A transcript file needs to begin with a \emph{file version} meta chunk, followed directly by the first \emph{start of session} chunk.
-
-For improved readability, we define the special characters as constants:
-<<constants>>=
-const unsigned char SO  = 0x0e;
-const unsigned char SI  = 0x0f;
-const unsigned char DLE = 0x10;
-@
-
-It is by design that the three special characters have consecutive byte numbers.
-This allows us to define a minimum and maximum byte value that requires special escape handling:
-<<constants>>=
-const unsigned char ESCMIN = 0x0e;
-const unsigned char ESCMAX = 0x10;
-@
-
-\subsubsection{How a \cmd{forscript} file is written}
-The function \emph{chunkw()} takes a pointer and a byte count as arguments and writes chunk data to the transcript file, applying required escapes on the fly.
-To improve performance, it does not write byte-per-byte, but instead scans the input data until it finds a special character.
-When it does, it writes everything up to, but not including, the special character to the file and then adds a DLE character.
-The search then goes on.
-If another special character is found, everything from the last special character (inclusive) to the current one (exclusive) plus a DLE is written.
-Eventually the whole input data will have been scanned and the function terminates after writing everything from the last special character (inclusive) or the beginning of the data (if there were no special characters) to the end of the input data.
-This is the code:
-<<chunkw>>=
-int chunkw(unsigned char *data, int count) {
-	int escaped = 0;
-	int pos = 0;
-	int start = 0;
-	while (pos < count) {
-		if (data[pos] <= ESCMAX && data[pos] >= ESCMIN) {
-			if (pos > start) {
-				if (!swrite(&data[start], sizeof(char), pos - start, OUTF))
-					return -1;
-			}
-			if (!swrite(&DLE, sizeof(DLE), 1, OUTF))
-				return -2;
-			start = pos;
-			escaped++;
-		}
-		pos++;
-	}
-	if (!swrite(&data[start], sizeof(char), pos - start, OUTF))
-		return -3;
-	return escaped;
-}
-@
-\emph{OUTF} is the already opened transcript file and a global variable:
-<<globals>>=
-FILE *OUTF;
-@
-
-The \emph{swrite()} function (“safe write”) that is being used here will return zero if the number of items written is not equal to the number of items that \emph{should} have been written:
-<<swrite>>=
-int swrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
-	return (fwrite(ptr, size, nmemb, stream) == nmemb);
-}
-@
-To be able to use \func{fwrite()}, \emph{stdio.h} has to be included:
-<<includes>>=
-#include <stdio.h>
-@
-
-There are functions to write chunk headers and footers:
-<<chunkwhf>>=
-int chunkwh(unsigned char id) {
-	int ret;
-	for (int i = 0; i < 2; i++) {
-		ret = swrite(&SO, sizeof(SO), 1, OUTF);
-		if (!ret)
-			return ret;
-	}
-	return swrite(&id, sizeof(unsigned char), 1, OUTF);
-}
-
-int chunkwf() {
-	return swrite(&SI, sizeof(SI), 1, OUTF);
-}
-@
-
-There is also a convenience function that writes a meta chunk’s header and footer as well as the actual data:
-<<chunkwm>>=
-int chunkwm(unsigned char id, unsigned char *data, int count) {
-	int ret;
-	if (!chunkwh(id))
-		return -101;
-	ret = chunkw(data, count);
-	if (ret < 0)
-		return ret;
-	if (!chunkwf())
-		return -102;
-	return 1;
-}
-@
-
-If the program has to terminate abnormally, the function \func{die()} will be called.
-It will output an error message and exit the software.
-<<die>>=
-void die(char *message, int chunk) {
-	fprintf(stderr, "%s: ", MYNAME);
-	if (chunk != 0) {
-		fprintf(stderr, "metadata chunk %02x failed", chunk);
-		if (message != NULL)
-			fprintf(stderr, ": ");
-	} else {
-		if (message == NULL)
-			fprintf(stderr, "unknown error");
-	}
-	if (message != NULL)
-		fprintf(stderr, message);
-	fprintf(stderr, "; exiting.\n");
-	exit(EXIT_FAILURE);
-}
-@
-\func{exit()} requires \emph{stdlib.h}:
-<<includes>>=
-#include <stdlib.h>
-@
-The global variable \emph{MYNAME} contains a pointer to the name the binary was called as.
-<<globals>>=
-char *MYNAME;
-@
-It is set in \func{main()}:
-<<setmyname>>=
-MYNAME = argv[0];
-@
-If \cmd{forscript} was called using a path name, everything up to the final slash needs to be cut off by moving the pointer accordingly:
-<<setmyname>>=
-{ char *lastslash;
-	if ((lastslash = strrchr(MYNAME, '/')) != NULL)
-		MYNAME = lastslash + 1;
-}
-@
-
 \subsection{Metadata chunk types}
 The next sections will describe the available metadata chunk types.
 Integers are unsigned and big endian, except where noted otherwise.
 Numbers are represented in binary form, not as ASCII digits.
 
+For better understanding, the code \cmd{forscript} uses to write each meta chunk appears after the chunk’s explanation.
+The three functions [[chunkwh()]], [[chunkwf()]] and [[chunkwd()]] that are used for actually writing the data to disk will be explained in section~\ref{def:chunkwriters}.
+To be able to understand the code, it is sufficient to know that [[chunkwh()]] takes one parameter (the chunk’s type) and writes the header bytes.
+[[chunkwf()]] writes the footer byte and takes no parameters, while [[chunkwd()]] writes the payload data, escaping it on the fly, and requires a pointer and byte count.
+There is an additional convenience function [[chunkwm()]] that takes all three parameters and will write a complete metadata chunk.
+
 Chunk functions return a negative value if an error occured, \cmd{forscript} should terminate then.
-For convenience, we define the following macro that will call \func{die()} and supply it with the chunk’s type.
-<<chunks>>=
-#define chunk(num) if (chunk##num() < 0) die(NULL, 0x##num);
-@
+
+A transcript file needs to begin with a \emph{file version} meta chunk, followed directly by the first \emph{start of session} chunk.
 
 \subsubsection*{\str{0x01} File version (1 byte)}
 The transcript file must start with a meta chunk of this type; there may be no other data before it.
@@ -403,6 +273,143 @@ Byte 5 closes the version chunk, 5 to 8 start a begin of session chunk.
 \subsection{Invocation}
 
 \section{Implementation of \cmd{forscript}}
+For improved readability, we define the special characters as constants:
+<<constants>>=
+const unsigned char SO  = 0x0e;
+const unsigned char SI  = 0x0f;
+const unsigned char DLE = 0x10;
+@
+
+It is by design that the three special characters have consecutive byte numbers.
+This allows us to define a minimum and maximum byte value that requires special escape handling:
+<<constants>>=
+const unsigned char ESCMIN = 0x0e;
+const unsigned char ESCMAX = 0x10;
+@
+
+\subsubsection{How a \cmd{forscript} file is written}
+The function \emph{chunkw()} takes a pointer and a byte count as arguments and writes chunk data to the transcript file, applying required escapes on the fly.
+To improve performance, it does not write byte-per-byte, but instead scans the input data until it finds a special character.
+When it does, it writes everything up to, but not including, the special character to the file and then adds a DLE character.
+The search then goes on.
+If another special character is found, everything from the last special character (inclusive) to the current one (exclusive) plus a DLE is written.
+Eventually the whole input data will have been scanned and the function terminates after writing everything from the last special character (inclusive) or the beginning of the data (if there were no special characters) to the end of the input data.
+This is the code:
+<<chunkw>>=
+int chunkw(unsigned char *data, int count) {
+	int escaped = 0;
+	int pos = 0;
+	int start = 0;
+	while (pos < count) {
+		if (data[pos] <= ESCMAX && data[pos] >= ESCMIN) {
+			if (pos > start) {
+				if (!swrite(&data[start], sizeof(char), pos - start, OUTF))
+					return -1;
+			}
+			if (!swrite(&DLE, sizeof(DLE), 1, OUTF))
+				return -2;
+			start = pos;
+			escaped++;
+		}
+		pos++;
+	}
+	if (!swrite(&data[start], sizeof(char), pos - start, OUTF))
+		return -3;
+	return escaped;
+}
+@
+\emph{OUTF} is the already opened transcript file and a global variable:
+<<globals>>=
+FILE *OUTF;
+@
+
+The \emph{swrite()} function (“safe write”) that is being used here will return zero if the number of items written is not equal to the number of items that \emph{should} have been written:
+<<swrite>>=
+int swrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
+	return (fwrite(ptr, size, nmemb, stream) == nmemb);
+}
+@
+To be able to use \func{fwrite()}, \emph{stdio.h} has to be included:
+<<includes>>=
+#include <stdio.h>
+@
+
+There are functions to write chunk headers and footers:
+<<chunkwhf>>=
+int chunkwh(unsigned char id) {
+	int ret;
+	for (int i = 0; i < 2; i++) {
+		ret = swrite(&SO, sizeof(SO), 1, OUTF);
+		if (!ret)
+			return ret;
+	}
+	return swrite(&id, sizeof(unsigned char), 1, OUTF);
+}
+
+int chunkwf() {
+	return swrite(&SI, sizeof(SI), 1, OUTF);
+}
+@
+
+There is also a convenience function that writes a meta chunk’s header and footer as well as the actual data:
+<<chunkwm>>=
+int chunkwm(unsigned char id, unsigned char *data, int count) {
+	int ret;
+	if (!chunkwh(id))
+		return -101;
+	ret = chunkw(data, count);
+	if (ret < 0)
+		return ret;
+	if (!chunkwf())
+		return -102;
+	return 1;
+}
+@
+
+If the program has to terminate abnormally, the function \func{die()} will be called.
+It will output an error message and exit the software.
+<<die>>=
+void die(char *message, int chunk) {
+	fprintf(stderr, "%s: ", MYNAME);
+	if (chunk != 0) {
+		fprintf(stderr, "metadata chunk %02x failed", chunk);
+		if (message != NULL)
+			fprintf(stderr, ": ");
+	} else {
+		if (message == NULL)
+			fprintf(stderr, "unknown error");
+	}
+	if (message != NULL)
+		fprintf(stderr, message);
+	fprintf(stderr, "; exiting.\n");
+	exit(EXIT_FAILURE);
+}
+@
+\func{exit()} requires \emph{stdlib.h}:
+<<includes>>=
+#include <stdlib.h>
+@
+The global variable \emph{MYNAME} contains a pointer to the name the binary was called as.
+<<globals>>=
+char *MYNAME;
+@
+It is set in \func{main()}:
+<<setmyname>>=
+MYNAME = argv[0];
+@
+If \cmd{forscript} was called using a path name, everything up to the final slash needs to be cut off by moving the pointer accordingly:
+<<setmyname>>=
+{ char *lastslash;
+	if ((lastslash = strrchr(MYNAME, '/')) != NULL)
+		MYNAME = lastslash + 1;
+}
+@
+
+For convenience, we define the following macro that will call \func{die()} and supply it with the chunk’s type.
+<<chunks>>=
+#define chunk(num) if (chunk##num() < 0) die(NULL, 0x##num);
+@
+
 <<forscript.c>>=
 <<featuretest>>
 <<includes>>
