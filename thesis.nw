@@ -389,25 +389,32 @@ void die(char *message, int chunk) {
 <<includes>>=
 #include <stdlib.h>
 @
-The global variable \emph{MYNAME} contains a pointer to the name the binary was called as.
+The global variable \emph{MYNAME} contains a pointer to the name the binary was called as and is set in [[main()]].
 <<globals>>=
 char *MYNAME;
-@
-It is set in \func{main()}:
-<<setmyname>>=
-MYNAME = argv[0];
-@
-If \cmd{forscript} was called using a path name, everything up to the final slash needs to be cut off by moving the pointer accordingly:
-<<setmyname>>=
-{ char *lastslash;
-	if ((lastslash = strrchr(MYNAME, '/')) != NULL)
-		MYNAME = lastslash + 1;
-}
 @
 
 For convenience, we define the following macro that will call \func{die()} and supply it with the chunk’s type.
 <<chunks>>=
 #define chunk(num) if (chunk##num() < 0) die(NULL, 0x##num);
+@
+
+\subsection{Initialization}
+
+\subsubsection{Determining the binary name}
+To be able to output its own name (e.g. in error messages), \cmd{forscript} determines the name of the binary that has been called by the user.
+This value is stored in [[argv[0]]].
+The global variable [[MYNAME]] will be used to reference that value from every function that needs it.
+<<setmyname>>=
+MYNAME = argv[0];
+@
+If \cmd{forscript} was called using a path name (e.g. \str{/usr/bin/forscript}), everything up to the final slash needs to be cut off.
+This is done by moving the pointer to the character immediately following the final slash.
+<<setmyname>>=
+{ char *lastslash;
+	if ((lastslash = strrchr(MYNAME, '/')) != NULL)
+		MYNAME = lastslash + 1;
+}
 @
 
 <<forscript.c>>=
