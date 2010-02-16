@@ -575,8 +575,46 @@ Since the name is not needed during further execution, the slave will be opened 
 }
 @
 
+\subsection{Launching subprocesses}
+The original \cmd{script} uses one process to listen for input, one to listen for output and one to initialize and [[execl()]] the command to be recorded.
+\cmd{forscript} in contrast uses only the [[select()]] function to be notified of pending input and output and therefore only needs two processes: Itself and the subcommand.
+
+\subsubsection{Handling child termination}
+To be notified of an exiting subprocess, a handler for the \str{SIGCHLD} signal needs to be defined.
+This signal is sent by the operating system if any child process’s run status changes, i.e. it is stopped (\str{SIGSTOP}), continued (\str{SIGCONT}) or it exits.
+\cmd{script} terminates if the child is stopped, but \cmd{forscript} does not.
+<<sigchld>>=
+{ struct sigaction sa;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_NOCLDSTOP;
+	sa.sa_handler = finish;
+	sigaction(SIGCHLD, &sa, NULL);
+}
+@
+These functions and constants require \str{signal.h}.
+<<includes>>=
+#include <signal.h>
+@
+
+The function [[finish()]] handles the child’s termination.
+Since a signal handler can handle more than one signal, its number is passed as an argument.
+However, [[finish()]] only handles \str{SIGCHLD}, therefore it will ignore its argument.
+<<finish>>=
+void finish(int signal) {
+	UNUSED(signal);
+}
+@
+
+[[UNUSED]] is a macro that causes your compiler to stop warning you about an unused parameter:
+<<macros>>=
+#define UNUSED(var) while (0) { (void)(var); }
+@
+
+
+
 <<forscript.c>>=
 <<featuretest>>
+<<macros>>
 <<includes>>
 
 <<constants>>
@@ -596,12 +634,15 @@ extern FILE *stdout;
 
 <<chunks>>
 
+<<finish>>
+
 int main(int argc, char *argv[])
 {
 	<<setmyname>>
 	<<getopt>>
 	<<openoutfile>>
 	<<openpt>>
+	<<sigchld>>
 	chunk(01);
 	chunk(02);
 	chunk(11);
