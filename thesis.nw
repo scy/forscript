@@ -493,6 +493,7 @@ If there was no name supplied on the command line, the default name is \str{tran
 This differs from \cmd{script}’s default name \str{typescript} intentionally, because the file format is different and can, for example, not be displayed directly using \cmd{cat}.
 If there are any scripts or constructs that assume the default output file name to be \str{typescript}, the chance that replacing \cmd{script} with \cmd{forscript} will break their functionality anyway is quite high.
 
+\subsubsection{Opening the output file}
 As in \cmd{script}, there is a safety warning if no file name was supplied and \str{transcript} exists and is a (hard or soft) link.
 <<openoutfile>>=
 if (argc > 0) {
@@ -517,6 +518,14 @@ if (argc > 0) {
 @
 <<featuretest>>=
 #define _XOPEN_SOURCE 500
+@
+
+The file will now be opened, either for writing or for appending, depending on [[aflg]].
+<<openoutfile>>=
+if ((OUTF = fopen(OUTN, (aflg ? "a" : "w"))) == NULL) {
+	perror(OUTN);
+	die("the output file could not be opened", 0);
+}
 @
 
 <<forscript.c>>=
@@ -545,7 +554,6 @@ int main(int argc, char *argv[])
 	<<setmyname>>
 	<<getopt>>
 	<<openoutfile>>
-	OUTF = stdout;
 	chunk(01);
 	chunk(02);
 	chunk(11);
