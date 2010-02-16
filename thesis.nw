@@ -579,10 +579,11 @@ Since the name is not needed during further execution, the slave will be opened 
 The original \cmd{script} uses one process to listen for input, one to listen for output and one to initialize and [[execl()]] the command to be recorded.
 \cmd{forscript} in contrast uses only the [[select()]] function to be notified of pending input and output and therefore only needs two processes: Itself and the subcommand.
 
-\subsubsection{Handling child termination}
+\subsubsection{Registering signal handlers}
 To be notified of an exiting subprocess, a handler for the \str{SIGCHLD} signal needs to be defined.
 This signal is sent by the operating system if any child process’s run status changes, i.e. it is stopped (\str{SIGSTOP}), continued (\str{SIGCONT}) or it exits.
 \cmd{script} terminates if the child is stopped, but \cmd{forscript} does not.
+The function [[finish()]] handles the child’s termination and is defined in section \ref{def:finish}.
 <<sigchld>>=
 { struct sigaction sa;
 	sigemptyset(&sa.sa_mask);
@@ -596,7 +597,43 @@ These functions and constants require \str{signal.h}.
 #include <signal.h>
 @
 
-The function [[finish()]] handles the child’s termination.
+\subsubsection{Forking}
+When a progam calls the [[fork()]] function, the operating system basically clones the program into a new process that is a subprocess of the caller.
+Both processes continue to run at the next command after the [[fork()]] call, but the value [[fork()]] returned will be different:
+The child will see a return value of [[0]], while the parent will retrieve the process ID of the child.
+A negative value will be returned if the fork did not succeed.
+<<fork>>=
+if ((CHILD = fork()) < 0) {
+	perror("fork");
+	die("fork failed", 0);
+}
+@
+[[CHILD]] is used in several places when dealing with the subprocess, therefore it is a global variable.
+<<globals>>=
+int CHILD = 0;
+@
+
+After forking, the child launches (or, to be exact, becomes) the process that should be logged, while the parent does the actual input/output logging.
+<<fork>>=
+if (CHILD == 0)
+	doshell();
+else
+	doio();
+@
+
+\subsection{Running the target application}
+<<doshell>>=
+void doshell() {
+}
+@
+
+\subsection{Handling input and output}
+<<doio>>=
+void doio() {
+}
+@
+
+\subsection{Finishing execution}
 Since a signal handler can handle more than one signal, its number is passed as an argument.
 However, [[finish()]] only handles \str{SIGCHLD}, therefore it will ignore its argument.
 <<finish>>=
@@ -636,6 +673,10 @@ extern FILE *stdout;
 
 <<finish>>
 
+<<doshell>>
+
+<<doio>>
+
 int main(int argc, char *argv[])
 {
 	<<setmyname>>
@@ -643,6 +684,7 @@ int main(int argc, char *argv[])
 	<<openoutfile>>
 	<<openpt>>
 	<<sigchld>>
+	<<fork>>
 	chunk(01);
 	chunk(02);
 	chunk(11);
