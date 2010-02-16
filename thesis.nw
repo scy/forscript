@@ -484,6 +484,41 @@ The parsing loop therefore looks like this:
 }
 @
 
+After the options have been parsed, the output file name will be determined and stored in the global string [[OUTN]]:
+<<globals>>=
+char *OUTN = "transcript";
+@
+
+If there was no name supplied on the command line, the default name is \str{transcript}.
+This differs from \cmd{script}’s default name \str{typescript} intentionally, because the file format is different and can, for example, not be displayed directly using \cmd{cat}.
+If there are any scripts or constructs that assume the default output file name to be \str{typescript}, the chance that replacing \cmd{script} with \cmd{forscript} will break their functionality anyway is quite high.
+
+As in \cmd{script}, there is a safety warning if no file name was supplied and \str{transcript} exists and is a (hard or soft) link.
+<<openoutfile>>=
+if (argc > 0) {
+	OUTN = argv[0];
+} else {
+	struct stat s;
+	if (lstat(OUTN, &s) == 0 && (S_ISLNK(s.st_mode) || s.st_nlink > 1)) {
+		fprintf(stderr, "Warning: `%s' is a link.\n"
+		       "Use `%s [options] %s' if you really "
+		       "want to use it.\n"
+		       "%s not started.\n",
+		       OUTN, MYNAME, OUTN, MYNAME);
+		exit(1);
+	}
+}
+@
+
+[[lstat()]] needs \str{types.h} and \str{stat.h} as well as \str{\_XOPEN\_SOURCE}:
+<<includes>>=
+#include <sys/types.h>
+#include <sys/stat.h>
+@
+<<featuretest>>=
+#define _XOPEN_SOURCE 500
+@
+
 <<forscript.c>>=
 <<featuretest>>
 <<includes>>
@@ -509,6 +544,7 @@ int main(int argc, char *argv[])
 {
 	<<setmyname>>
 	<<getopt>>
+	<<openoutfile>>
 	OUTF = stdout;
 	chunk(01);
 	chunk(02);
