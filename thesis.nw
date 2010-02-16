@@ -174,10 +174,6 @@ This chunk requires \emph{time.h} for \func{clock\_gettime()}, \emph{inet.h} for
 #include <arpa/inet.h>
 #include <string.h>
 @
-Additionally, \emph{glibc} requires the following feature test macro to be defined in order to expose \func{clock\_gettime()}:
-<<featuretest>>=
-#define _POSIX_C_SOURCE 199309L
-@
 
 \subsubsection*{\str{0x11} Terminal size (two 2-byte values)}
 Is written at session start and when the size of the terminal window changes.
@@ -528,6 +524,57 @@ if ((OUTF = fopen(OUTN, (aflg ? "a" : "w"))) == NULL) {
 }
 @
 
+\subsection{Preparing a new pseudo terminal}
+While \cmd{script} uses manual PTY allocation (by trying out device names) or BSD’s [[openpty()]] where available, \cmd{forscript} uses the PTY multiplexer (\str{/dev/ptmx}) standardized in POSIX.1-2001 to create a new PTY.
+This method requires \str{fcntl.h} and a sufficiently high feature test macro value for POSIX code.
+<<includes>>=
+#include <fcntl.h>
+@
+<<featuretest>>=
+#define _POSIX_C_SOURCE 200112L
+@
+
+The PTY’s master and slave file descriptors will be stored in these global variables:
+<<globals>>=
+int PTM = 0, PTS = 0;
+@
+
+A new PTY master is requested like this:
+<<openpt>>=
+if ((PTM = posix_openpt(O_RDWR | O_NOCTTY)) < 0) {
+	perror("openpt");
+	die("openpt failed", 0);
+}
+@
+
+Then, access to the slave is granted.
+<<openpt>>=
+if (grantpt(PTM) < 0) {
+	perror("grantpt");
+	die("grantpt failed", 0);
+}
+if (unlockpt(PTM) < 0) {
+	perror("unlockpt");
+	die("unlockpt failed", 0);
+}
+@
+
+The slave’s device file name is requested using [[ptsname()]].
+Since the name is not needed during further execution, the slave will be opened and its file descriptor stored.
+<<openpt>>=
+{ char *pts = NULL;
+	if ((pts = ptsname(PTM)) != NULL) {
+		if ((PTS = open(pts, O_RDWR)) < 0) {
+			perror(pts);
+			die("pts open failed", 0);
+		}
+	} else {
+		perror("ptsname");
+		die("ptsname failed", 0);
+	}
+}
+@
+
 <<forscript.c>>=
 <<featuretest>>
 <<includes>>
@@ -554,6 +601,7 @@ int main(int argc, char *argv[])
 	<<setmyname>>
 	<<getopt>>
 	<<openoutfile>>
+	<<openpt>>
 	chunk(01);
 	chunk(02);
 	chunk(11);
