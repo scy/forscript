@@ -622,8 +622,48 @@ else
 @
 
 \subsection{Running the target application}
+The [[doshell()]] function is run in the child process, whose only task it is to set up all required PTY redirections and then execute the client command.
+Therefore, open file descriptors from the parent process which are no longer needed are closed early.
 <<doshell>>=
 void doshell() {
+	close(PTM);
+	fclose(OUTF);
+@
+Standard input, output and error are bound to the PTY slave.
+<<doshell>>=
+	dup2(PTS, 0);
+	dup2(PTS, 1);
+	dup2(PTS, 2);
+@
+If the environment variable \str{\$SHELL} is set, its value is used.
+Otherwise the default is \str{/bin/sh}, which should exist on all Unix systems.
+<<doshell>>=
+	char *shell;
+	if ((shell = getenv("SHELL")) == NULL)
+		shell = "/bin/sh";
+@
+Next, the name of the shell, without any path components, is determined to be used as argument zero when executing the client command.
+<<doshell>>=
+	char *shname;
+	if ((shname = strrchr(shell, '/')) == NULL)
+		shname = shell;
+	else
+		shname++;
+@
+Finally, the [[execl()]] function is used to replace the currently running \cmd{forscript} process with the shell that has just been selected.
+If a target command has been specified using the \str{-c} option, it will be passed to the shell.
+Else, an interactive shell is launched using the \str{-i} option.
+<<doshell>>=
+	if (cflg != NULL)
+		execl(shell, shname, "-c", cflg, NULL);
+	else
+		execl(shell, shname, "-i", NULL);
+@
+The \cmd{forscript} child process should now have been replaced with the shell.
+If execution reaches code after [[execl()]], an error occured and the child process will terminate with an error message.
+<<doshell>>=
+	perror(shell);
+	die("execing the shell failed", 0);
 }
 @
 
