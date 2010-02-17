@@ -179,13 +179,12 @@ This chunk requires \emph{time.h} for \func{clock\_gettime()}, \emph{inet.h} for
 Is written at session start and when the size of the terminal window changes.
 The first data word contains the number of colums, the second one the number of rows.
 
+Since the terminal size has to be passed to the running client application, the chunk itself does not request the values, but receives them as a parameter.
+
 <<chunks>>=
-int chunk11() {
-	struct winsize size;
+int chunk11(struct winsize *size) {
 	uint32_t be;
-	if (ioctl(0, TIOCGWINSZ, &size) < 0)
-		return -1;
-	be = (htons(size.ws_col) << 16) | htons(size.ws_row);
+	be = (htons(size->ws_col) << 16) | htons(size->ws_row);
 	return chunkwm(0x11, (unsigned char *)&be, sizeof(be));
 }
 @
@@ -547,6 +546,8 @@ The I/O code will reset its value and continue operation.
 int RESIZED = 0;
 @
 
+To initialize its window size, the reception of \str{SIGWINCH} will be simulated as soon as the client application’s pseudo terminal has been created.
+
 \subsection{Preparing a new pseudo terminal}
 While \cmd{script} uses manual PTY allocation (by trying out device names) or BSD’s [[openpty()]] where available, \cmd{forscript} uses the PTY multiplexer (\str{/dev/ptmx}) standardized in POSIX.1-2001 to create a new PTY.
 This method requires \str{fcntl.h} and a sufficiently high feature test macro value for POSIX code.
@@ -752,7 +753,6 @@ int main(int argc, char *argv[])
 	<<fork>>
 	chunk(01);
 	chunk(02);
-	chunk(11);
 	chunk(12);
 	chunk(13);
 	return EXIT_SUCCESS;
