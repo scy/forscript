@@ -538,9 +538,22 @@ The PTY’s master and slave file descriptors will be stored in these global var
 int PTM = 0, PTS = 0;
 @
 
+Additionally, the settings of the terminal \cmd{forscript} runs in will be saved in the global variable [[TT]].
+This variable is used to duplicate the terminal’s settings to the newly created PTY as well as to restore the terminal settings as soon as \cmd{forscript} terminates.
+<<globals>>=
+struct termios TT;
+@
+<<openpt>>=
+tcgetattr(0, &TT);
+@
+The \str{termios} structure is defined in \str{termios.h}.
+<<includes>>=
+#include <termios.h>
+@
+
 A new PTY master is requested like this:
 <<openpt>>=
-if ((PTM = posix_openpt(O_RDWR | O_NOCTTY)) < 0) {
+if ((PTM = posix_openpt(O_RDWR)) < 0) {
 	perror("openpt");
 	die("openpt failed", 0);
 }
@@ -560,6 +573,7 @@ if (unlockpt(PTM) < 0) {
 
 The slave’s device file name is requested using [[ptsname()]].
 Since the name is not needed during further execution, the slave will be opened and its file descriptor stored.
+The settings of the terminal \cmd{forscript} was started in will be copied to the new terminal.
 <<openpt>>=
 { char *pts = NULL;
 	if ((pts = ptsname(PTM)) != NULL) {
@@ -571,6 +585,7 @@ Since the name is not needed during further execution, the slave will be opened 
 		perror("ptsname");
 		die("ptsname failed", 0);
 	}
+	ioctl(PTS, TCSANOW, &TT);
 }
 @
 
@@ -658,11 +673,20 @@ void doshell() {
 	close(PTM);
 	fclose(OUTF);
 @
-Standard input, output and error are bound to the PTY slave.
+
+Next, the child process changes its controlling terminal to be the PTY slave.
+In order to do that, it has to be placed in a seperate session.
+<<doshell>>=
+	setsid();
+	ioctl(PTS, TIOCSCTTY, 0);
+@
+
+Standard input, output and error are bound to the PTY slave, which can then be closed.
 <<doshell>>=
 	dup2(PTS, 0);
 	dup2(PTS, 1);
 	dup2(PTS, 2);
+	close(PTS);
 @
 If the environment variable \str{\$SHELL} is set, its value is used.
 Otherwise the default is \str{/bin/sh}, which should exist on all Unix systems.
