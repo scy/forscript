@@ -735,13 +735,18 @@ If execution reaches code after [[execl()]], an error occured and the child proc
 @
 
 \subsection{Handling input and output}
+<<globals>>=
+char *IOBUF[BUFSIZ];
+@
 <<doio>>=
 void doio() {
+	int sr;
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(0, &fds);
 	FD_SET(PTS, &fds);
-	select(PTS + 1, &fds, NULL, NULL, NULL);
+	sr = select(PTS + 1, &fds, NULL, NULL, NULL);
+	done();
 }
 @
 <<includes>>=
@@ -760,6 +765,12 @@ void finish(int signal) {
 [[UNUSED]] is a macro that causes your compiler to stop warning you about an unused parameter:
 <<macros>>=
 #define UNUSED(var) while (0) { (void)(var); }
+@
+
+<<done>>=
+void done() {
+	tcsetattr(0, TCSANOW, &TT);
+}
 @
 
 
@@ -784,6 +795,8 @@ void finish(int signal) {
 <<chunkwm>>
 
 <<chunks>>
+
+<<done>>
 
 <<finish>>
 
