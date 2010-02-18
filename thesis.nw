@@ -737,7 +737,15 @@ If execution reaches code after [[execl()]], an error occured and the child proc
 \subsection{Handling input and output}
 <<doio>>=
 void doio() {
+	fd_set fds;
+	FD_ZERO(&fds);
+	FD_SET(0, &fds);
+	FD_SET(PTS, &fds);
+	select(PTS + 1, &fds, NULL, NULL, NULL);
 }
+@
+<<includes>>=
+#include <sys/select.h>
 @
 
 \subsection{Finishing execution}
