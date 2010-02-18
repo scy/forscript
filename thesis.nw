@@ -573,7 +573,6 @@ if (unlockpt(PTM) < 0) {
 
 The slave’s device file name is requested using [[ptsname()]].
 Since the name is not needed during further execution, the slave will be opened and its file descriptor stored.
-The settings of the terminal \cmd{forscript} was started in will be copied to the new terminal.
 <<openpt>>=
 { char *pts = NULL;
 	if ((pts = ptsname(PTM)) != NULL) {
@@ -585,7 +584,22 @@ The settings of the terminal \cmd{forscript} was started in will be copied to th
 		perror("ptsname");
 		die("ptsname failed", 0);
 	}
-	ioctl(PTS, TCSANOW, &TT);
+}
+@
+
+The “parent” terminal will be configured into a “raw” mode of operation.
+Afterwards, the settings of the terminal \cmd{forscript} was started in will be copied to the new terminal.
+<<openpt>>=
+{
+	struct termios rtt = TT;
+	rtt.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP
+	                 | INLCR | IGNCR | ICRNL | IXON);
+	rtt.c_oflag &= ~OPOST;
+	rtt.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+	rtt.c_cflag &= ~(CSIZE | PARENB);
+	rtt.c_cflag |= CS8;
+	tcsetattr(0, TCSANOW, &rtt);
+	tcsetattr(PTS, TCSANOW, &TT);
 }
 @
 
