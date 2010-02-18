@@ -764,7 +764,6 @@ void finish(int signal) {
 <<constants>>
 
 <<globals>>
-extern FILE *stdout;
 
 <<die>>
 
