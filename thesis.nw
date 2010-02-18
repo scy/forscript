@@ -184,7 +184,7 @@ Since the terminal size has to be passed to the running client application, the 
 <<chunks>>=
 int chunk11(struct winsize *size) {
 	uint32_t be;
-	be = (htons(size->ws_col) << 16) | htons(size->ws_row);
+	be = htonl((size->ws_col << 16) | size->ws_row);
 	return chunkwm(0x11, (unsigned char *)&be, sizeof(be));
 }
 @
