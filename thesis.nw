@@ -523,31 +523,6 @@ if ((OUTF = fopen(OUTN, (aflg ? "a" : "w"))) == NULL) {
 }
 @
 
-\subsection{Getting notified about window size changes}
-If the size of a terminal window changes, the controlling process receives a \str{SIGWINCH} signal and should act accordingly.
-\cmd{forscript} does this in the [[resize()]] function.
-The new size is retrieved, stored in the transcript file and set to the client application.
-<<resized>>=
-void resized(int signal) {
-	UNUSED(signal);
-	struct winsize size;
-	RESIZED = 1;
-	ioctl(0, TIOCGWINSZ, &size);
-	if (chunk11(&size) < 0)
-		die("handling SIGWINCH", 0x11);
-	ioctl(PTS, TIOCSWINSZ, &size);
-}
-@
-
-Since the I/O handling code uses [[select()]] to wait for data, it will be interrupted when the \str{SIGWINCH} signal is received.
-The global variable [[RESIZED]] exists to inform the I/O handler that it has been interrupted by \str{SIGWINCH}.
-The I/O code will reset its value and continue operation.
-<<globals>>=
-int RESIZED = 0;
-@
-
-To initialize its window size, the reception of \str{SIGWINCH} will be simulated as soon as the client application’s pseudo terminal has been created.
-
 \subsection{Preparing a new pseudo terminal}
 While \cmd{script} uses manual PTY allocation (by trying out device names) or BSD’s [[openpty()]] where available, \cmd{forscript} uses the PTY multiplexer (\str{/dev/ptmx}) standardized in POSIX.1-2001 to create a new PTY.
 This method requires \str{fcntl.h} and a sufficiently high feature test macro value for POSIX code.
@@ -597,6 +572,36 @@ Since the name is not needed during further execution, the slave will be opened 
 		die("ptsname failed", 0);
 	}
 }
+@
+
+\subsubsection{Getting notified about window size changes}
+If the size of a terminal window changes, the controlling process receives a \str{SIGWINCH} signal and should act accordingly.
+\cmd{forscript} does this in the [[resize()]] function.
+The new size is retrieved, stored in the transcript file and set to the client application.
+<<resized>>=
+void resized(int signal) {
+	UNUSED(signal);
+	struct winsize size;
+	RESIZED = 1;
+	ioctl(0, TIOCGWINSZ, &size);
+	if (chunk11(&size) < 0)
+		die("handling SIGWINCH", 0x11);
+	ioctl(PTS, TIOCSWINSZ, &size);
+}
+@
+
+Since the I/O handling code uses [[select()]] to wait for data, it will be interrupted when the \str{SIGWINCH} signal is received.
+The global variable [[RESIZED]] exists to inform the I/O handler that it has been interrupted by \str{SIGWINCH}.
+The I/O code will reset its value and continue operation.
+<<globals>>=
+int RESIZED = 0;
+@
+
+To initialize the client PTY’s window size, the reception of \str{SIGWINCH} will be simulated now.
+Since the client is not yet running, [[RESIZED]] will be reset afterwards.
+<<openpt>>=
+resized(0);
+RESIZED = 0;
 @
 
 \subsection{Launching subprocesses}
@@ -751,10 +756,6 @@ int main(int argc, char *argv[])
 	<<openpt>>
 	<<sigchld>>
 	<<fork>>
-	chunk(01);
-	chunk(02);
-	chunk(12);
-	chunk(13);
 	return EXIT_SUCCESS;
 }
 @
