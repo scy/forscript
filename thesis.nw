@@ -788,6 +788,17 @@ On all Unix systems, stdin should be file descriptor~$0$, but for maximum portab
 	int highest = ((STDIN_FILENO > PTM) ? STDIN_FILENO : PTM) + 1;
 @
 
+Several metadata chunks need to be written.
+If the \str{-a} flag is not set, a \emph{file version} chunk is written.
+Then \emph{begin of session}, \emph{environment variables} and \emph{locale settings}.
+<<doio>>=
+	if (!aflg)
+		chunk(01);
+	chunk(02);
+	chunk(12);
+	chunk(13);
+@
+
 To be able to calculate the delay between I/O~chunks, the monotonic clock available via [[clock_gettime()]] is used.
 The following code will initialize the timer:
 <<doio>>=
