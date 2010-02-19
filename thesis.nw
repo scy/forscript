@@ -605,7 +605,7 @@ Afterwards, the settings of the terminal \cmd{forscript} was started in will be 
 
 \subsubsection{Getting notified about window size changes}
 If the size of a terminal window changes, the controlling process receives a \str{SIGWINCH} signal and should act accordingly.
-\cmd{forscript} does this in the [[resize()]] function.
+\cmd{forscript} does this in the [[resized()]] function.
 The new size is retrieved, stored in the transcript file and set to the client application.
 <<resized>>=
 void resized(int signal) {
@@ -626,11 +626,13 @@ The I/O code will reset its value and continue operation.
 int RESIZED = 0;
 @
 
-To initialize the client PTY’s window size, the reception of \str{SIGWINCH} will be simulated now.
-Since the client is not yet running, [[RESIZED]] will be reset afterwards.
+The client PTY’s window size will be initialized then.
+This will cause the client to receive a \str{SIGWINCH} that will be handled as soon as \cmd{forscript} starts to handle the client’s input and output, causing [[resized()]] to be called.
 <<openpt>>=
-resized(0);
-RESIZED = 0;
+{ struct winsize size;
+	ioctl(0, TIOCGWINSZ, &size);
+	ioctl(PTS, TIOCSWINSZ, &size);
+}
 @
 
 \subsection{Launching subprocesses}
@@ -740,12 +742,26 @@ char *IOBUF[BUFSIZ];
 @
 <<doio>>=
 void doio() {
-	int sr;
+	int sr, count;
 	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(0, &fds);
-	FD_SET(PTS, &fds);
-	sr = select(PTS + 1, &fds, NULL, NULL, NULL);
+	while (CHILD > 0) {
+		FD_ZERO(&fds);
+		FD_SET(0, &fds);
+		FD_SET(PTM, &fds);
+		sr = select(PTM + 1, &fds, NULL, NULL, NULL);
+		if (sr < 0)
+			continue;
+		if (FD_ISSET(PTM, &fds)) {
+			count = read(PTM, &IOBUF, sizeof(IOBUF));
+			if (count > 0)
+				write(1, &IOBUF, count);
+		}
+		if (FD_ISSET(0, &fds)) {
+			count = read(0, &IOBUF, sizeof(IOBUF));
+			if (count > 0)
+				write(PTM, &IOBUF, count);
+		}
+	}
 	done();
 }
 @
@@ -759,6 +775,7 @@ However, [[finish()]] only handles \str{SIGCHLD}, therefore it will ignore its a
 <<finish>>=
 void finish(int signal) {
 	UNUSED(signal);
+	CHILD = -1;
 }
 @
 
