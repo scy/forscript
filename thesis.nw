@@ -810,6 +810,13 @@ If output from the client application is available, it will be read into the buf
 		}
 @
 
+Since execution does not reach this point if none of the file descriptors had data available, it can be assumed that data has been written to the transcript file.
+If the \str{-f} flag has been specified on the command line, the file should be flushed now.
+<<doio>>=
+		if (fflg)
+			fflush(OUTF);
+@
+
 If the main loop exits, the child has been terminated.
 [[done()]] is called to flush data and tidy up the environment.
 <<doio>>=
