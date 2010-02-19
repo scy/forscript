@@ -256,6 +256,29 @@ Contains the number of seconds and nanoseconds that have passed since the last d
 
 A replaying application should wait for the time specified in this chunk before advancing further in the transcript file.
 
+<<chunks>>=
+int chunk16(struct timespec *ts) {
+	unsigned char buf[2 * sizeof(uint32_t)];
+	uint32_t secs, nanos;
+	struct timespec now;
+	if (clock_gettime(CLOCK_MONOTONIC, &now) < 0)
+		return -1;
+	secs = now.tv_sec - ts->tv_sec;
+	if (now.tv_nsec > ts->tv_nsec) {
+		nanos = now.tv_nsec - ts->tv_nsec;
+	} else {
+		nanos = 1000000000L - (ts->tv_nsec - now.tv_nsec);
+		secs--;
+	}
+	*ts = now;
+	secs = htonl(secs);
+	nanos = htonl(nanos);
+	memcpy(&buf[0], &secs, sizeof(secs));
+	memcpy(&buf[sizeof(secs)], &nanos, sizeof(nanos));
+	return chunkwm(0x16, buf, sizeof(buf));
+}
+@
+
 \subsection{Magic number}
 Since a \cmd{forscript} file has to start with a file version chunk followed by a begin of session chunk, there is a distinctive eight-byte signature at the beginning of each file:
 \begin{verbatim}
@@ -762,6 +785,16 @@ On all Unix systems, stdin should be file descriptor~$0$, but for maximum portab
 	int highest = ((STDIN_FILENO > PTM) ? STDIN_FILENO : PTM) + 1;
 @
 
+To be able to calculate the delay between I/O~chunks, the monotonic clock available via [[clock_gettime()]] is used.
+The following code will initialize the timer:
+<<doio>>=
+	struct timespec ts;
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0) {
+		perror("CLOCK_MONOTONIC");
+		die("retrieving monotonic time failed", 0);
+	}
+@
+
 The main loop, which handles input and output, will run until the child process exits.
 <<doio>>=
 	while (CHILD > 0) {
@@ -782,6 +815,13 @@ If the signal was \str{SIGCHLD}, notifying the parent thread of the child’s te
 <<doio>>=
 		if (sr <= 0)
 			continue;
+@
+
+Since execution does not reach this point if none of the file descriptors had data available, it can be assumed that data will be written to the transcript file.
+Therefore [[chunk16()]] is called to calculate and write a delay meta chunk.
+After it has calculated the time delta, it will automatically update [[ts]] to contain the current time.
+<<doio>>=
+		chunk16(&ts);
 @
 
 If user input is available, it will be read into the buffer.
@@ -810,7 +850,6 @@ If output from the client application is available, it will be read into the buf
 		}
 @
 
-Since execution does not reach this point if none of the file descriptors had data available, it can be assumed that data has been written to the transcript file.
 If the \str{-f} flag has been specified on the command line, the file should be flushed now.
 <<doio>>=
 		if (fflg)
