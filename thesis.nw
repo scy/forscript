@@ -737,42 +737,85 @@ If execution reaches code after [[execl()]], an error occured and the child proc
 @
 
 \subsection{Handling input and output}
-<<globals>>=
-char *IOBUF[BUFSIZ];
+While \cmd{script} forks twice and utilizes seperate processes to handle input and output to and from the client application, \cmd{forscript} uses a single process for both tasks, taking advantage of the [[select()]] function (defined in \str{select.h}) that allows it to monitor several open file descriptors at once.
+<<includes>>=
+#include <sys/select.h>
 @
+
+Input and output data will never be read simultaneously.
+Therefore, a single data buffer is sufficient.
+Its size is [[BUFSIZ]]~bytes, which is a constant defined in \str{stdio.h} and contains a recommended buffer size, for example 8192~bytes.
+The number of bytes that have been read into the buffer by [[read()]] will be stored in [[count]].
 <<doio>>=
 void doio() {
-	int sr, count;
+	char iobuf[BUFSIZ];
+	int count;
+@
+
+The [[select()]] function is supplied with a set of file descriptors to watch, stored in the variable [[fds]].
+It returns in [[sr]] the number of file descriptors that are ready, or $-1$ if an error occured (for example, a signal like \str{SIGWINCH} was received).
+Additionally, it requires the number of the highest-numbered file descriptor plus one as its first parameter.
+On all Unix systems, stdin should be file descriptor~$0$, but for maximum portability, \cmd{forscript} compares both descriptors and stores the value to pass to [[select()]] in the variable [[highest]].
+<<doio>>=
 	fd_set fds;
+	int sr;
+	int highest = ((STDIN_FILENO > PTM) ? STDIN_FILENO : PTM) + 1;
+@
+
+The main loop, which handles input and output, will run until the child process exits.
+<<doio>>=
 	while (CHILD > 0) {
+@
+
+Since [[select()]] manipulates the value of [[fds]], it has to be initialized again in each iteration.
+First its value is cleared, then the file descriptors for standard input and the PTY’s master are added to the set, then [[select()]] is called to wait until one of the file descriptors has data to read available.
+<<doio>>=
 		FD_ZERO(&fds);
-		FD_SET(0, &fds);
+		FD_SET(STDIN_FILENO, &fds);
 		FD_SET(PTM, &fds);
-		sr = select(PTM + 1, &fds, NULL, NULL, NULL);
-		if (sr < 0)
+		sr = select(highest, &fds, NULL, NULL, NULL);
+@
+
+If select returns $0$ or less, none of the file descriptors are ready for reading.
+This can for example happen if a signal was received and should be ignored.
+If the signal was \str{SIGCHLD}, notifying the parent thread of the child’s termination, the signal handler will have set [[CHILD]] to $-1$ and the loop will finish.
+<<doio>>=
+		if (sr <= 0)
 			continue;
+@
+
+If user input is available, it will be read into the buffer.
+The data will then be written to the transcript file, having [[SO]] prepended and [[SI]] appended.
+Then it will be sent to the client application.
+<<doio>>=
+		if (FD_ISSET(STDIN_FILENO, &fds)) {
+			count = read(STDIN_FILENO, iobuf, BUFSIZ);
+			if (count > 0) {
+				fwrite(&SO, sizeof(SO), 1, OUTF);
+				chunkw((unsigned char *)iobuf, count);
+				fwrite(&SI, sizeof(SI), 1, OUTF);
+				write(PTM, iobuf, count);
+			}
+		}
+@
+
+If output from the client application is available, it will be read into the buffer and written to the transcript file and standard output.
+<<doio>>=
 		if (FD_ISSET(PTM, &fds)) {
-			count = read(PTM, &IOBUF, sizeof(IOBUF));
+			count = read(PTM, iobuf, BUFSIZ);
 			if (count > 0) {
-				fwrite(&IOBUF, sizeof(char), count, OUTF);
-				write(1, &IOBUF, count);
+				fwrite(iobuf, sizeof(char), count, OUTF);
+				write(STDOUT_FILENO, iobuf, count);
 			}
 		}
-		if (FD_ISSET(0, &fds)) {
-			count = read(0, &IOBUF, sizeof(IOBUF));
-			if (count > 0) {
-				fwrite("\x0e", sizeof(char), 1, OUTF);
-				chunkw((unsigned char *)&IOBUF, count);
-				fwrite("\x0f", sizeof(char), 1, OUTF);
-				write(PTM, &IOBUF, count);
-			}
-		}
+@
+
+If the main loop exits, the child has been terminated.
+[[done()]] is called to flush data and tidy up the environment.
+<<doio>>=
 	}
 	done();
 }
-@
-<<includes>>=
-#include <sys/select.h>
 @
 
 \subsection{Finishing execution}
