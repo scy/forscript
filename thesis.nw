@@ -753,13 +753,19 @@ void doio() {
 			continue;
 		if (FD_ISSET(PTM, &fds)) {
 			count = read(PTM, &IOBUF, sizeof(IOBUF));
-			if (count > 0)
+			if (count > 0) {
+				fwrite(&IOBUF, sizeof(char), count, OUTF);
 				write(1, &IOBUF, count);
+			}
 		}
 		if (FD_ISSET(0, &fds)) {
 			count = read(0, &IOBUF, sizeof(IOBUF));
-			if (count > 0)
+			if (count > 0) {
+				fwrite("\x0e", sizeof(char), 1, OUTF);
+				chunkw((unsigned char *)&IOBUF, count);
+				fwrite("\x0f", sizeof(char), 1, OUTF);
 				write(PTM, &IOBUF, count);
+			}
 		}
 	}
 	done();
