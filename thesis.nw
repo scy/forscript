@@ -256,6 +256,9 @@ Contains the number of seconds and nanoseconds that have passed since the last d
 
 A replaying application should wait for the time specified in this chunk before advancing further in the transcript file.
 
+Since the seconds and nanoseconds are represented as integers, converting to a floating-point number would mean loss of precision.
+Therefore both integers are subtracted independently.
+If the nanoseconds part of [[now]] is less than that of [[ts]], the seconds part has to be decreased by one for the result to be correct.
 <<chunks>>=
 int chunk16(struct timespec *ts) {
 	unsigned char buf[2 * sizeof(uint32_t)];
