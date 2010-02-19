@@ -175,6 +175,16 @@ This chunk requires \emph{time.h} for \func{clock\_gettime()}, \emph{inet.h} for
 #include <string.h>
 @
 
+\subsubsection*{\str{0x03} End of session (1 byte)}
+Denotes the end of a \cmd{forscript} session.
+The data byte contains the return value of the child process.
+
+<<chunks>>=
+int chunk03(int *status) {
+	return chunkwm(0x03, (unsigned char *)"\0", 1);
+}
+@
+
 \subsubsection*{\str{0x11} Terminal size (two 2-byte values)}
 Is written at session start and when the size of the terminal window changes.
 The first data word contains the number of colums, the second one the number of rows.
@@ -911,6 +921,7 @@ void finish(int signal) {
 
 <<done>>=
 void done() {
+	chunk03(&signal);
 	tcsetattr(0, TCSANOW, &TT);
 }
 @
