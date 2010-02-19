@@ -543,9 +543,25 @@ if (argc > 0) {
 
 The file will now be opened, either for writing or for appending, depending on [[aflg]].
 <<openoutfile>>=
-if ((OUTF = fopen(OUTN, (aflg ? "a" : "w"))) == NULL) {
+if ((OUTF = fopen(OUTN, (aflg ? "a+" : "w"))) == NULL) {
 	perror(OUTN);
 	die("the output file could not be opened", 0);
+}
+@
+
+If the file has been opened for appending, check whether it starts with a compatible file format.
+Currently, the only format allowed is \str{0x01}.
+If the file is empty, appending is possible, but the \emph{file version} chunk has to be written.
+This is done by setting [[aflg]] to $0$, which will cause [[doio()]] to write the chunk.
+<<openoutfile>>=
+if (aflg) {
+	char buf[5];
+	size_t count;
+	count = fread(&buf, sizeof(char), 5, OUTF);
+	if (count == 0)
+		aflg = 0;
+	else if (count != 5 || strncmp(buf, "\x0e\x0e\x01\x01\x0f", 5) != 0)
+		die("output file is not in forscript format v1, cannot append", 0);
 }
 @
 
