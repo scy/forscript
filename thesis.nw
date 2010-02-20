@@ -3,7 +3,6 @@
 % We use noweb.
 \usepackage{noweb}
 \def\cmd{\emph}
-\def\func{\emph}
 \def\param{\texttt}
 \def\str{\texttt}
 \def\bs{\textbackslash}
@@ -38,10 +37,10 @@ The analysis of the original \cmd{script} utility in this thesis is based on the
 If the argument is omitted, the file will be named \emph{typescript}.
 There are also several command-line switches that modify \cmd{script}’s behavior.
 
-The \param{-a} switch will pass the \emph{a} flag to \func{fopen()}’s \emph{mode} parameter instead of \emph{w}.
+The \param{-a} switch will pass the \emph{a} flag to [[fopen()]]’s \emph{mode} parameter instead of \emph{w}.
 If a typescript file does already exist, it will then not be overwritten; instead, the new content will be appended to the existing file.
 
-If the \param{-f} switch is used, \cmd{script} will call \func{fflush()} on the typescript file after new data has been written to it.
+If the \param{-f} switch is used, \cmd{script} will call [[fflush()]] on the typescript file after new data has been written to it.
 This results in instant updates to the typescript file, at the expense of performance.
 
 %FIXME: Continue.
@@ -170,7 +169,7 @@ int chunk02() {
 }
 @
 
-This chunk requires \emph{time.h} for \func{clock\_gettime()}, \emph{inet.h} for \func{htonl()} and \emph{string.h} for \func{memcpy()}:
+This chunk requires \emph{time.h} for [[clock_gettime()]], \emph{inet.h} for [[htonl()]] and \emph{string.h} for [[memcpy()]]:
 <<includes>>=
 #include <time.h>
 #include <arpa/inet.h>
@@ -201,7 +200,7 @@ int chunk11(struct winsize *size) {
 }
 @
 
-This chunk requires \emph{ioctl.h} for \func{ioctl()}:
+This chunk requires \emph{ioctl.h} for [[ioctl()]]:
 <<includes>>=
 #include <sys/ioctl.h>
 @
@@ -363,7 +362,7 @@ int swrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
 	return (fwrite(ptr, size, nmemb, stream) == nmemb);
 }
 @
-To be able to use \func{fwrite()}, \emph{stdio.h} has to be included:
+To be able to use [[fwrite()]], \emph{stdio.h} has to be included:
 <<includes>>=
 #include <stdio.h>
 @
@@ -400,7 +399,7 @@ int chunkwm(unsigned char id, unsigned char *data, int count) {
 }
 @
 
-If the program has to terminate abnormally, the function \func{die()} will be called.
+If the program has to terminate abnormally, the function [[die()]] will be called.
 It will output an error message and exit the software.
 <<die>>=
 void die(char *message, int chunk) {
@@ -419,7 +418,7 @@ void die(char *message, int chunk) {
 	exit(EXIT_FAILURE);
 }
 @
-\func{exit()} requires \emph{stdlib.h}:
+[[exit()]] requires \emph{stdlib.h}:
 <<includes>>=
 #include <stdlib.h>
 @
@@ -428,7 +427,7 @@ The global variable \emph{MYNAME} contains a pointer to the name the binary was 
 char *MYNAME;
 @
 
-For convenience, we define the following macro that will call \func{die()} and supply it with the chunk’s type.
+For convenience, we define the following macro that will call [[die()]] and supply it with the chunk’s type.
 <<chunks>>=
 #define chunk(num) if (chunk##num() < 0) die(NULL, 0x##num);
 @
