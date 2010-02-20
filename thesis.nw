@@ -451,7 +451,7 @@ For convenience, we define the following macro that will call [[die()]] and supp
 
 The [[statusmsg()]] function writes a string to both the terminal and the transcript:
 <<statusmsg>>=
-void statusmsg(char *msg) {
+void statusmsg(const char *msg) {
 	char date[BUFSIZ];
 	time_t t = time(NULL);
 	struct tm *lt = localtime(&t);
@@ -888,8 +888,8 @@ This is required because \cmd{scriptreplay} assumes that the first line in the t
 	if (!qflg)
 		statusmsg(STARTMSG);
 @
-<<globals>>=
-char *STARTMSG = "forscript started on %s, file is %s\r\n";
+<<constants>>=
+const char *STARTMSG = "forscript started on %s, file is %s\r\n";
 @
 
 The main loop, which handles input and output, will run until the child process exits.
@@ -980,6 +980,18 @@ void finish(int signal) {
 void done() {
 	int status;
 	wait(&status);
+@
+
+If the \str{-q} flag has not been supplied, \cmd{forscript} will write a shutdown message to both the terminal and the transcript file.
+<<done>>=
+	if (!qflg)
+		statusmsg(STOPMSG);
+@
+<<constants>>=
+const char *STOPMSG = "forscript done on %s, file is %s\r\n";
+@
+
+<<done>>=
 	chunk03(status);
 	tcsetattr(0, TCSANOW, &TT);
 }
