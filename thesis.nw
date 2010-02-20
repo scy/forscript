@@ -110,7 +110,7 @@ This basic file format design has several advantages:
 \subsection{Metadata chunk types}
 The next sections will describe the available metadata chunk types.
 Integers are unsigned and big endian, except where noted otherwise.
-Numbers are represented in binary form, not as ASCII digits.
+In the resulting file, numbers are represented in binary form, not as ASCII digits.
 
 For better understanding, the code \cmd{forscript} uses to write each meta chunk appears after the chunk’s explanation.
 The three functions [[chunkwh()]], [[chunkwf()]] and [[chunkwd()]] that are used for actually writing the data to disk will be explained in section~\ref{def:chunkwriters}.
@@ -219,7 +219,7 @@ int chunk12() {
 			if (!ret)
 				return -1;
 		}
-		ret = chunkw((unsigned char *)environ[i], strlen(environ[i]) + 1);
+		ret = chunkwd((unsigned char *)environ[i], strlen(environ[i]) + 1);
 		if (ret < 0)
 			return ret;
 		i++;
@@ -239,7 +239,7 @@ Contains the string values of several locale settings, namely \str{LC\_ALL}, \st
 
 <<chunks>>=
 #define chunk13w(type) loc = setlocale(LC_##type, ""); \
-        ret = chunkw((unsigned char *)loc, strlen(loc) + 1);
+        ret = chunkwd((unsigned char *)loc, strlen(loc) + 1);
 int chunk13() {
 	char *loc;
 	int ret;
@@ -319,7 +319,7 @@ const unsigned char ESCMAX = 0x10;
 @
 
 \subsubsection{How a \cmd{forscript} file is written}
-The function \emph{chunkw()} takes a pointer and a byte count as arguments and writes chunk data to the transcript file, applying required escapes on the fly.
+The function \emph{chunkwd()} takes a pointer and a byte count as arguments and writes chunk data to the transcript file, applying required escapes on the fly.
 To improve performance, it does not write byte-per-byte, but instead scans the input data until it finds a special character.
 When it does, it writes everything up to, but not including, the special character to the file and then adds a DLE character.
 The search then goes on.
@@ -327,7 +327,7 @@ If another special character is found, everything from the last special characte
 Eventually the whole input data will have been scanned and the function terminates after writing everything from the last special character (inclusive) or the beginning of the data (if there were no special characters) to the end of the input data.
 This is the code:
 <<chunkw>>=
-int chunkw(unsigned char *data, int count) {
+int chunkwd(unsigned char *data, int count) {
 	int escaped = 0;
 	int pos = 0;
 	int start = 0;
@@ -388,7 +388,7 @@ int chunkwm(unsigned char id, unsigned char *data, int count) {
 	int ret;
 	if (!chunkwh(id))
 		return -101;
-	ret = chunkw(data, count);
+	ret = chunkwd(data, count);
 	if (ret < 0)
 		return ret;
 	if (!chunkwf())
@@ -872,7 +872,7 @@ Then it will be sent to the client application.
 			count = read(STDIN_FILENO, iobuf, BUFSIZ);
 			if (count > 0) {
 				fwrite(&SO, sizeof(SO), 1, OUTF);
-				chunkw((unsigned char *)iobuf, count);
+				chunkwd((unsigned char *)iobuf, count);
 				fwrite(&SI, sizeof(SI), 1, OUTF);
 				write(PTM, iobuf, count);
 			}
