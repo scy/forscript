@@ -260,20 +260,21 @@ Is written at session start.
 Contains the string values of several locale settings, namely \str{LC\_ALL}, \str{LC\_COLLATE}, \str{LC\_CTYPE}, \str{LC\_MESSAGES}, \str{LC\_MONETARY}, \str{LC\_NUMERIC} and \str{LC\_TIME}, in that order.
 
 <<chunks>>=
-#define chunk13w(type) loc = setlocale(LC_##type, ""); \
-        ret = chunkwd((unsigned char *)loc, strlen(loc) + 1);
 int chunk13() {
+	int cat[7] = { LC_ALL, LC_COLLATE, LC_CTYPE, LC_MESSAGES,
+	               LC_MONETARY, LC_NUMERIC, LC_TIME };
 	char *loc;
 	int ret;
-	ret = chunkwh(0x13);
-	chunk13w(ALL);
-	chunk13w(COLLATE);
-	chunk13w(CTYPE);
-	chunk13w(MESSAGES);
-	chunk13w(MONETARY);
-	chunk13w(NUMERIC);
-	chunk13w(TIME);
-	ret = chunkwf();
+	if ((ret = chunkwh(0x13)) < 0)
+		return ret;
+	for (int i = 0; i < 7; i++) {
+		if ((loc = setlocale(cat[i], "")) == NULL)
+			return -1;
+		if ((ret = chunkwd((unsigned char *)loc, strlen(loc) + 1)) < 0)
+			return ret;
+	}
+	if ((ret = chunkwf()) < 0)
+		return ret;
 	return 0;
 }
 @
