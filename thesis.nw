@@ -659,7 +659,11 @@ Since the name is not needed during further execution, the slave will be opened 
 @
 
 The “parent” terminal will be configured into a “raw” mode of operation.
+\cmd{script} does this by calling [[cfmakeraw()]], which is a nonstandard BSD function.
+For portability reasons \cmd{forscript} sets the corresponding bits manually, thereby emulating [[cfmakeraw()]].
+The list of settings is taken from the \emph{termios(3)} Linux man page~\cite{linuxman} and should be equivalent.
 Afterwards, the settings of the terminal \cmd{forscript} was started in will be copied to the new terminal.
+This means that in the eyes of the user the terminal’s behavior will not change, but \cmd{forscript} can now document the terminal’s data stream with maximum accuracy.
 <<openpt>>=
 {
 	struct termios rtt = TT;
@@ -998,6 +1002,14 @@ int main(int argc, char *argv[])
 \section{Evaluation}
 
 \section{Summary}
+
+\begin{thebibliography}{9}
+\bibitem{linuxman}
+	\emph{The Linux \emph{man-pages} project},
+	maintained by Michael Kerrisk,
+	release~3.23.
+	\url{http://www.kernel.org/doc/man-pages/}
+\end{thebibliography}
 
 % This is where it all ends.
 \end{document}
