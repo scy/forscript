@@ -449,6 +449,27 @@ For convenience, we define the following macro that will call [[die()]] and supp
 #define chunk(num) if (chunk##num() < 0) die(NULL, 0x##num);
 @
 
+The [[statusmsg()]] function writes a string to both the terminal and the transcript:
+<<statusmsg>>=
+void statusmsg(char *msg) {
+	char date[BUFSIZ];
+	time_t t = time(NULL);
+	struct tm *lt = localtime(&t);
+	if (lt == NULL)
+		die("localtime failed", 0);
+	if (strftime(date, sizeof(date), "%c", lt) < 1)
+		die("strftime failed", 0);
+	if (printf(msg, date, OUTN) < 0) {
+		perror("status stdout");
+		die("statusmsg stdout failed", 0);
+	}
+	if (fprintf(OUTF, msg, date, OUTN) < 0) {
+		perror("status transcript");
+		die("statusmsg transcript failed", 0);
+	}
+}
+@
+
 \subsection{Initialization}
 
 \subsubsection{Determining the binary name}
@@ -858,6 +879,19 @@ The following code will initialize the timer:
 	}
 @
 
+If the \str{-q} flag has not been supplied, \cmd{forscript} will display a startup message similar to \cmd{script}’s and write the same message to the transcript file.
+Note that this behavior differs from \cmd{script}’s:
+When called with \str{-q}, \cmd{script} would not output the startup message to the terminal, but record it to the typescript file nevertheless.
+This is required because \cmd{scriptreplay} assumes that the first line in the typescript is this startup message and will unconditionally suppress its output.
+\cmd{forscript}, however, has no such limitation and will not write the startup line to the transcript if the \str{-q} flag is set.
+<<doio>>=
+	if (!qflg)
+		statusmsg(STARTMSG);
+@
+<<globals>>=
+char *STARTMSG = "forscript started on %s, file is %s\r\n";
+@
+
 The main loop, which handles input and output, will run until the child process exits.
 <<doio>>=
 	while (CHILD > 0) {
@@ -976,6 +1010,8 @@ void done() {
 <<chunkwm>>
 
 <<chunks>>
+
+<<statusmsg>>
 
 <<done>>
 
