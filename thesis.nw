@@ -699,19 +699,30 @@ This means that in the eyes of the user the terminal’s behavior will not chang
 }
 @
 
-\subsubsection{Getting notified about window size changes}
+\subsubsection{Managing window size}
 If the size of a terminal window changes, the controlling process receives a \str{SIGWINCH} signal and should act accordingly.
-\cmd{forscript} does this in the [[resized()]] function.
-The new size is retrieved, stored in the transcript file and set to the client application.
+\cmd{forscript} handles this signal in the [[resized()]] function by writing the new size to the transcript and forwarding it to the client terminal.
 <<resized>>=
 void resized(int signal) {
 	UNUSED(signal);
-	struct winsize size;
+	winsize(3);
 	RESIZED = 1;
+}
+@
+
+The actual reading and writing of the window size is done by [[winsize()]], which takes a [[mode]] parameter.
+If the mode is $1$, the client application’s terminal size will be set.
+If the mode is $2$, the terminal size will be written to the transcript.
+If the mode is $3$, both operations will be done, which is the usual case.
+<<winsize>>=
+void winsize(unsigned int mode) {
+	struct winsize size;
 	ioctl(0, TIOCGWINSZ, &size);
-	if (chunk11(&size) < 0)
-		die("handling SIGWINCH", 0x11);
-	ioctl(PTS, TIOCSWINSZ, &size);
+	if (mode & 2)
+		if (chunk11(&size) < 0)
+			die("writing window size", 0x11);
+	if ((mode & 1) && PTS)
+		ioctl(PTS, TIOCSWINSZ, &size);
 }
 @
 
@@ -722,13 +733,11 @@ The I/O code will reset its value and continue operation.
 int RESIZED = 0;
 @
 
-The client PTY’s window size will be initialized then.
-This will cause the client to receive a \str{SIGWINCH} that will be handled as soon as \cmd{forscript} starts to handle the client’s input and output, causing [[resized()]] to be called.
+The client PTY’s window size will be initialized now.
+This needs to take place before the client application is launched, because it probably requires an already configured terminal size when starting up.
+Writing the size to the transcript however would put the window size meta chunk before the start of session chunk, therefore [[winsize()]]’s mode $1$ is used.
 <<openpt>>=
-{ struct winsize size;
-	ioctl(0, TIOCGWINSZ, &size);
-	ioctl(PTS, TIOCSWINSZ, &size);
-}
+	winsize(1);
 @
 
 \subsection{Launching subprocesses}
@@ -739,13 +748,16 @@ The original \cmd{script} uses one process to listen for input, one to listen fo
 To be notified of an exiting subprocess, a handler for the \str{SIGCHLD} signal needs to be defined.
 This signal is sent by the operating system if any child process’s run status changes, i.e. it is stopped (\str{SIGSTOP}), continued (\str{SIGCONT}) or it exits.
 \cmd{script} terminates if the child is stopped, but \cmd{forscript} does not.
-The function [[finish()]] handles the child’s termination and is defined in section \ref{def:finish}.
+The function [[finish()]] handles the child’s termination.
+The second signal handler, [[resized()]], handles window size changes.
 <<sigchld>>=
 { struct sigaction sa;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_NOCLDSTOP;
 	sa.sa_handler = finish;
 	sigaction(SIGCHLD, &sa, NULL);
+	sa.sa_handler = resized;
+	sigaction(SIGWINCH, &sa, NULL);
 }
 @
 These functions and constants require \str{signal.h}.
@@ -861,12 +873,14 @@ On all Unix systems, stdin should be file descriptor~$0$, but for maximum portab
 Several metadata chunks need to be written.
 If the \str{-a} flag is not set, a \emph{file version} chunk is written.
 Then \emph{begin of session}, \emph{environment variables} and \emph{locale settings}.
+Finally [[winsize()]]’s mode $2$ is used to only write the window size to the transcript without sending a second \str{SIGWINCH} to the client.
 <<doio>>=
 	if (!aflg)
 		chunk(01);
 	chunk(02);
 	chunk(12);
 	chunk(13);
+	winsize(2);
 @
 
 To be able to calculate the delay between I/O~chunks, the monotonic clock available via [[clock_gettime()]] is used.
@@ -971,7 +985,7 @@ void finish(int signal) {
 }
 @
 
-[[UNUSED]] is a macro that causes your compiler to stop warning you about an unused parameter:
+[[UNUSED]] is a macro that causes your compiler to stop warning about an unused parameter:
 <<macros>>=
 #define UNUSED(var) while (0) { (void)(var); }
 @
@@ -1028,6 +1042,8 @@ const char *STOPMSG = "forscript done on %s, file is %s\r\n";
 <<done>>
 
 <<finish>>
+
+<<winsize>>
 
 <<resized>>
 
