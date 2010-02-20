@@ -721,8 +721,8 @@ void winsize(unsigned int mode) {
 	if (mode & 2)
 		if (chunk11(&size) < 0)
 			die("writing window size", 0x11);
-	if ((mode & 1) && PTS)
-		ioctl(PTS, TIOCSWINSZ, &size);
+	if ((mode & 1) && PTM)
+		ioctl(PTM, TIOCSWINSZ, &size);
 }
 @
 
@@ -868,6 +868,11 @@ On all Unix systems, stdin should be file descriptor~$0$, but for maximum portab
 	fd_set fds;
 	int sr;
 	int highest = ((STDIN_FILENO > PTM) ? STDIN_FILENO : PTM) + 1;
+@
+
+The slave side of the PTY is no longer needed and should be closed.
+<<doio>>=
+	close(PTS);
 @
 
 Several metadata chunks need to be written.
