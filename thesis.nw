@@ -118,7 +118,9 @@ To be able to understand the code, it is sufficient to know that [[chunkwh()]] t
 [[chunkwf()]] writes the footer byte and takes no parameters, while [[chunkwd()]] writes the payload data, escaping it on the fly, and requires a pointer and byte count.
 There is an additional convenience function [[chunkwm()]] that takes all three parameters and will write a complete metadata chunk.
 
-Chunk functions return a negative value if an error occured, \cmd{forscript} should terminate then.
+All chunk functions return a negative value if an error occured, for example if an environment setting could not be retrieved or if writing to the transcript file failed.
+Since only a partial metadata chunk may have been written to the transcript, the file is no longer in a consistent state.
+Therefore, \cmd{forscript} should terminate whenever a chunk function returns a negative value.
 
 A transcript file needs to begin with a \emph{file version} meta chunk, followed directly by the first \emph{start of session} chunk.
 
