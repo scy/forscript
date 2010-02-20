@@ -2,7 +2,6 @@
 \usepackage[english]{babel}
 \usepackage{ucs}
 \usepackage[utf8x]{inputenc}
-\usepackage[T1]{fontenc}
 \usepackage{relsize}
 \usepackage{lmodern}
 
