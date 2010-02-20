@@ -179,10 +179,21 @@ This chunk requires \emph{time.h} for [[clock_gettime()]], \emph{inet.h} for [[h
 \subsubsection*{\str{0x03} End of session (1 byte)}
 Denotes the end of a \cmd{forscript} session.
 The data byte contains the return value of the child process.
+The usual exit code convention applies:
+If the child exited normally, use its return value.
+If the child was terminated as a result of a signal (like \str{SIGSEGV}), use the number of the signal plus $128$.
+
+The parameter [[status]] should contain the raw status value returned by [[wait()]], not only the child’s return value.
+If the exit code of the child could not be determined, \str{0xff} is used instead.
 
 <<chunks>>=
-int chunk03(int *status) {
-	return chunkwm(0x03, (unsigned char *)"\0", 1);
+int chunk03(int status) {
+	unsigned char data = ~0;
+	if (WIFEXITED(status))
+		data = WEXITSTATUS(status);
+	else if (WIFSIGNALED(status))
+		data = 128 + WTERMSIG(status);
+	return chunkwm(0x03, &data, sizeof(data));
 }
 @
 
@@ -923,9 +934,14 @@ void finish(int signal) {
 
 <<done>>=
 void done() {
-	chunk03(&signal);
+	int status;
+	wait(&status);
+	chunk03(status);
 	tcsetattr(0, TCSANOW, &TT);
 }
+@
+<<includes>>=
+#include <sys/wait.h>
 @
 
 
