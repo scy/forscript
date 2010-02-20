@@ -1,5 +1,15 @@
-% This uses my article.tex include.
-\input{article.tex}
+\documentclass{scrartcl}
+\usepackage[english]{babel}
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{relsize}
+\usepackage{lmodern}
+
+\PreloadUnicodePage{0}
+
+\usepackage{hyperref}
+
 % We use noweb.
 \usepackage{noweb}
 \def\cmd{\emph}
