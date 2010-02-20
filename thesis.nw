@@ -319,6 +319,7 @@ const unsigned char ESCMAX = 0x10;
 @
 
 \subsubsection{How a \cmd{forscript} file is written}
+\label{def:chunkwriters}
 The function \emph{chunkwd()} takes a pointer and a byte count as arguments and writes chunk data to the transcript file, applying required escapes on the fly.
 To improve performance, it does not write byte-per-byte, but instead scans the input data until it finds a special character.
 When it does, it writes everything up to, but not including, the special character to the file and then adds a DLE character.
@@ -372,13 +373,13 @@ int chunkwh(unsigned char id) {
 	for (int i = 0; i < 2; i++) {
 		ret = swrite(&SO, sizeof(SO), 1, OUTF);
 		if (!ret)
-			return ret;
+			return -1;
 	}
-	return swrite(&id, sizeof(unsigned char), 1, OUTF);
+	return (swrite(&id, sizeof(unsigned char), 1, OUTF)) ? 1 : -1;
 }
 
 int chunkwf() {
-	return swrite(&SI, sizeof(SI), 1, OUTF);
+	return (swrite(&SI, sizeof(SI), 1, OUTF)) ? 1 : -1;
 }
 @
 
@@ -387,12 +388,12 @@ There is also a convenience function that writes a meta chunk’s header and foo
 int chunkwm(unsigned char id, unsigned char *data, int count) {
 	int ret;
 	if (!chunkwh(id))
-		return -101;
+		return -11;
 	ret = chunkwd(data, count);
 	if (ret < 0)
 		return ret;
 	if (!chunkwf())
-		return -102;
+		return -12;
 	return 1;
 }
 @
