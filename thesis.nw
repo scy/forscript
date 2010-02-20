@@ -706,7 +706,6 @@ If the size of a terminal window changes, the controlling process receives a \st
 void resized(int signal) {
 	UNUSED(signal);
 	winsize(3);
-	RESIZED = 1;
 }
 @
 
@@ -724,13 +723,6 @@ void winsize(unsigned int mode) {
 	if ((mode & 1) && PTM)
 		ioctl(PTM, TIOCSWINSZ, &size);
 }
-@
-
-Since the I/O handling code uses [[select()]] to wait for data, it will be interrupted when the \str{SIGWINCH} signal is received.
-The global variable [[RESIZED]] exists to inform the I/O handler that it has been interrupted by \str{SIGWINCH}.
-The I/O code will reset its value and continue operation.
-<<globals>>=
-int RESIZED = 0;
 @
 
 The client PTY’s window size will be initialized now.
