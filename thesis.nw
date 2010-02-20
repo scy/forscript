@@ -163,8 +163,7 @@ int chunk02() {
 	uint32_t secs;
 	int32_t nanos = ~0;
 	int16_t tzone = ~0;
-	ret = clock_gettime(CLOCK_REALTIME, &now);
-	if (ret < 0)
+	if ((ret = clock_gettime(CLOCK_REALTIME, &now)) < 0)
 		return ret;
 	secs = htonl(now.tv_sec);
 	if (now.tv_nsec < 2000000000L && now.tv_nsec > -2000000000L)
@@ -236,21 +235,19 @@ int chunk12() {
 	int ret;
 	while (environ[i] != NULL) {
 		if (i == 0) {
-			ret = chunkwh(0x12);
-			if (!ret)
-				return -1;
+			if ((ret = chunkwh(0x12)) < 0)
+				return ret;
 		}
-		ret = chunkwd((unsigned char *)environ[i], strlen(environ[i]) + 1);
-		if (ret < 0)
+		if ((ret = chunkwd((unsigned char *)environ[i],
+		                   strlen(environ[i]) + 1)) < 0)
 			return ret;
 		i++;
 	}
 	if (i != 0) {
-		ret = chunkwf();
-		if (!ret)
-			return -1;
+		if ((ret = chunkwf()) < 0)
+			return ret;
 	}
-	return 0;
+	return 1;
 }
 @
 
@@ -411,8 +408,7 @@ int chunkwm(unsigned char id, unsigned char *data, int count) {
 	int ret;
 	if (!chunkwh(id))
 		return -11;
-	ret = chunkwd(data, count);
-	if (ret < 0)
+	if ((ret = chunkwd(data, count)) < 0)
 		return ret;
 	if (!chunkwf())
 		return -12;
