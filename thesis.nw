@@ -53,9 +53,14 @@ A new system, \cmd{forscript}, providing additional capabilities and mechanisms 
 
 \tableofcontents
 \pagebreak
-\pagenumbering{arabic}
 
-\section{Introduction}
+\section*{Acknowledgements}
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+
+\pagebreak
+\pagenumbering{arabic}
+\section{Introduction}\label{intro}
 
 \subsection{Background: Computer forensics}
 Computer forensics is a branch of forensic science.
@@ -84,15 +89,32 @@ All interaction with the forensic software takes place in a text-based interface
 A text-based interface cannot display graphics or use the mouse\footnote{Using the mouse is possible via several extensions, but mouse commands are simply translated to special control characters and can be read by the application just like any other keyboard input.}.
 
 In principle, CLI sessions can be documented quite easily by creating a piece of software that records everything typed on the keyboard and everything sent to the screen.
-The \cmd{script} utility is often used to accomplish this; however, it has several limitations described in section \ref{scriptissues} which greatly limit its usefulness as a forensic tool.
+The \cmd{script} utility is often used to accomplish this; however, it has several limitations described in section~\ref{scriptissues} which greatly limit its usefulness as a forensic tool.
 
 \subsection{Tasks}
 
 \subsection{Results}
 
 \subsection{Outlook}
+Section~\ref{intro}, which you are currently reading, contains the introduction into the topic of computer forensics.
+It explains why detailed documentation of forensic analyses is an important task, what a command-line interface is, which subjects will be presented in this thesis and also provides an overview of the tasks and results.
 
-\section{\cmd{script}}
+In section~\ref{script}, one of the most popular tools for recording interactive terminal sessions, \cmd{script}, will be presented and the format of the files it generates will be described.
+Afterwards, several issues regarding its usage as a forensic tool are presented, leading to the conclusion that it should be replaced with a more suitable software.
+
+This new software called \cmd{forscript} will be drafted in section~\ref{design}, focusing on its file format and the resulting properties.
+The invocation syntax of \cmd{forscript}, which is based on that of \cmd{script}, and the differences in behavior compared to \cmd{script} is also described.
+
+Section~\ref{implementation}, by far the longest section, contains a detailed step-by-step description of \cmd{forscript}’s source code.
+It describes how to write \cmd{forscript}’s data format, parsing the command line, what a pseudo terminal is and how to create one to access the input and output streams of an application, how to deal with subprocesses and signals and other things.
+
+The resulting application will be evaluated in section~\ref{evaluation}, which includes an example transcript file and a description of \cmd{forscript}’s known limitations.
+
+Finally, section~\ref{summary} summarizes the work that has been done.
+It talks about the future of \cmd{forscript} and describes the next steps that should probably be taken to make it even more useful.
+
+\pagebreak
+\section{\cmd{script}}\label{script}
 \emph{util-linux} is the name of a collection of command-line utilities for Linux systems.
 It includes essential software like \cmd{dmesg}, \cmd{fdisk}, \cmd{mkswap}, \cmd{mount} and \cmd{shutdown} as well as the \cmd{script} and \cmd{scriptreplay} utilities.
 
@@ -143,7 +165,8 @@ The two file formats produced by \cmd{script}, typescript and timing, show sever
 \item Appending to a typescript file is possible, but ambigious, since the beginning of a new part is determined only by the string \str{"Script started on~…"}. Also, appending to a typescript and recording timing information are incompatible, because \cmd{scriptreplay} will only ignore the first header line in a typescript file. Subsequent ones will disturb the timing’s byte counter.
 \end{itemize}
 
-\section{Design of \cmd{forscript}}
+\pagebreak
+\section{Design of \cmd{forscript}}\label{design}
 \subsection{File format}
 A \cmd{forscript} data file (called a \emph{transcript file}) consists of the mostly unaltered output stream of the client application, but includes blocks of additional data (called \emph{control chunks}) at arbitrary positions.
 A control chunk is started by a \emph{shift out} byte (\str{0x0e}) and terminated by a \emph{shift in} byte (\str{0x0f}).
@@ -382,7 +405,8 @@ Byte 5 closes the version chunk, 5 to 8 start a begin of session chunk.
 
 \subsection{Invocation}
 
-\section{Implementation of \cmd{forscript}}
+\pagebreak
+\section{Implementation of \cmd{forscript}}\label{implementation}
 For improved readability, we define the special characters as constants:
 <<constants>>=
 const unsigned char SO  = 0x0e;
@@ -1145,9 +1169,11 @@ int main(int argc, char *argv[])
 }
 @
 
-\section{Evaluation}
+\pagebreak
+\section{Evaluation}\label{evaluation}
 
-\section{Summary}
+\pagebreak
+\section{Summary}\label{summary}
 
 \pagebreak
 \begin{thebibliography}{9}
