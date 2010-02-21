@@ -92,10 +92,21 @@ In principle, CLI sessions can be documented quite easily by creating a piece of
 The \cmd{script} utility is often used to accomplish this; however, it has several limitations described in section~\ref{scriptissues} which greatly limit its usefulness as a forensic tool.
 
 \subsection{Tasks}
+Several tasks have to be solved in this bachelor thesis:
+\begin{itemize}
+\item Analyze \cmd{script} with regard to weaknesses concerning its usage as a forensic tool.
+\item Describe \cmd{script}’s output format and its disadvantages.
+\item Describe in detail an output format suitable for forensic usage.
+\item Implement a software for Linux that is used like \cmd{script}, but creates output in the new forensic output format. In order to minimize the requirements a target system has to meet to be able to run the software, it has to be implemented in the \term{C} programming language.
+\item Document the software according to the methods of \term{literate programming}.
+\end{itemize}
+\term{Literate programming}\cite{literate} is a technique invented by Donald~E. Knuth, the author of the \TeX typesetting system.
+Instead of writing more or less commented source code, it propagates writing a continuous text with embedded code fragments.
+These do not necessarily appear in the order they are executed, but where they are didactically useful.
 
 \subsection{Results}
 
-\subsection{Outlook}
+\subsection{Outlook on the thesis}
 Section~\ref{intro}, which you are currently reading, contains the introduction into the topic of computer forensics.
 It explains why detailed documentation of forensic analyses is an important task, what a command-line interface is, which subjects will be presented in this thesis and also provides an overview of the tasks and results.
 
@@ -1177,6 +1188,11 @@ int main(int argc, char *argv[])
 
 \pagebreak
 \begin{thebibliography}{9}
+\bibitem{literate}
+	Knuth, Donald~E.:
+	\emph{Literate Programming} (1992),
+	Center for the Study of Language and Information,
+	ISBN~978-0937073803.
 \bibitem{linuxman}
 	\emph{The Linux \emph{man-pages} project},
 	maintained by Michael Kerrisk,
