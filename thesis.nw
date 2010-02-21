@@ -862,6 +862,11 @@ On all Unix systems, stdin should be file descriptor~$0$, but for maximum portab
 	int highest = ((STDIN_FILENO > PTM) ? STDIN_FILENO : PTM) + 1;
 @
 
+The variable [[drain]] determines whether the child has already terminated, but the buffers should still be drained.
+<<doio>>=
+	int drain = 0;
+@
+
 The slave side of the PTY is no longer needed and should be closed.
 <<doio>>=
 	close(PTS);
@@ -905,56 +910,77 @@ const char *STARTMSG = "forscript started on %s, file is %s\r\n";
 
 The main loop, which handles input and output, will run until the child process exits.
 <<doio>>=
-	while (CHILD > 0) {
+	while ((CHILD > 0) || drain) {
 @
 
 Since [[select()]] manipulates the value of [[fds]], it has to be initialized again in each iteration.
 First its value is cleared, then the file descriptors for standard input and the PTY’s master are added to the set, then [[select()]] is called to wait until one of the file descriptors has data to read available.
+When in drain mode, [[select()]] may not be called to avoid blocking.
 <<doio>>=
-		FD_ZERO(&fds);
-		FD_SET(STDIN_FILENO, &fds);
-		FD_SET(PTM, &fds);
-		sr = select(highest, &fds, NULL, NULL, NULL);
+		if (!drain) {
+			FD_ZERO(&fds);
+			FD_SET(STDIN_FILENO, &fds);
+			FD_SET(PTM, &fds);
+			sr = select(highest, &fds, NULL, NULL, NULL);
+@
+
+If the child process has terminated, there may still be data left in the buffers, therefore the terminal’s file descriptor is set to non-blocking mode.
+Reading will then continue until no more data can be retrieved.
+If drain mode is already active, this code will not be executed.
+<<doio>>=
+			if (CHILD < 0) {
+				int flags = fcntl(PTM, F_GETFL);
+				if (fcntl(PTM, F_SETFL, (flags | O_NONBLOCK)) == 0) {
+					drain = 1;
+					continue;
+				}
+			}
 @
 
 If select returns $0$ or less, none of the file descriptors are ready for reading.
 This can for example happen if a signal was received and should be ignored.
-If the signal was \str{SIGCHLD}, notifying the parent thread of the child’s termination, the signal handler will have set [[CHILD]] to $-1$ and the loop will finish.
+If the signal was \str{SIGCHLD}, notifying the parent thread of the child’s termination, the signal handler will have set [[CHILD]] to $-1$ and the loop will finish after the buffers have been drained.
+If drain mode is already active, [[select()]] will not have been run, therefore this test is not needed then.
 <<doio>>=
-		if (sr <= 0)
-			continue;
+			if (sr <= 0)
+				continue;
 @
 
-Since execution does not reach this point if none of the file descriptors had data available, it can be assumed that data will be written to the transcript file.
+When not in drain mode, execution does not reach this point if none of the file descriptors had data available.
+Thus it can be assumed that data will be written to the transcript file.
 Therefore [[chunk16()]] is called to calculate and write a delay meta chunk.
 After it has calculated the time delta, it will automatically update [[ts]] to contain the current time.
 <<doio>>=
-		chunk16(&ts);
+			chunk16(&ts);
 @
 
 If user input is available, it will be read into the buffer.
 The data will then be written to the transcript file, having [[SO]] prepended and [[SI]] appended.
 Then it will be sent to the client application.
+When in drain mode, user input is irrelevant since the child has already terminated.
 <<doio>>=
-		if (FD_ISSET(STDIN_FILENO, &fds)) {
-			count = read(STDIN_FILENO, iobuf, BUFSIZ);
-			if (count > 0) {
-				fwrite(&SO, sizeof(SO), 1, OUTF);
-				chunkwd((unsigned char *)iobuf, count);
-				fwrite(&SI, sizeof(SI), 1, OUTF);
-				write(PTM, iobuf, count);
+			if (FD_ISSET(STDIN_FILENO, &fds)) {
+				count = read(STDIN_FILENO, iobuf, BUFSIZ);
+				if (count > 0) {
+					fwrite(&SO, sizeof(SO), 1, OUTF);
+					chunkwd((unsigned char *)iobuf, count);
+					fwrite(&SI, sizeof(SI), 1, OUTF);
+					write(PTM, iobuf, count);
+				}
 			}
-		}
 @
 
-If output from the client application is available, it will be read into the buffer and written to the transcript file and standard output.
+Regardless of whether in drain mode or not, if output from the client application is available, it will be read into the buffer and written to the transcript file and standard output.
+If there was no data to read, the buffer has been drained, drain mode ends and the main loop will terminate.
 <<doio>>=
+		} // if (!drain)
 		if (FD_ISSET(PTM, &fds)) {
 			count = read(PTM, iobuf, BUFSIZ);
 			if (count > 0) {
 				fwrite(iobuf, sizeof(char), count, OUTF);
 				write(STDOUT_FILENO, iobuf, count);
-			}
+			} else
+				drain = 0;
 		}
 @
 
@@ -964,7 +990,7 @@ If the \str{-f} flag has been specified on the command line, the file should be 
 			fflush(OUTF);
 @
 
-If the main loop exits, the child has been terminated.
+If the main loop exits, the child has terminated.
 [[done()]] is called to flush data and tidy up the environment.
 <<doio>>=
 	}
