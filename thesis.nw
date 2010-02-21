@@ -141,16 +141,35 @@ The analysis of the original \cmd{script} utility in this thesis is based on the
 
 \subsection{Invocation}
 \cmd{script} takes one optional argument, the file name of the typescript file to generate.
-If the argument is omitted, the file will be named \emph{typescript}.
-There are also several command-line switches that modify \cmd{script}’s behavior.
+If the argument is omitted, the file will be named \emph{typescript}, except when the file already exists and is a (symbolic or hard) link:
+\cmd{script} then refuses to overwrite the file, apparently for safety reasons.
+This check can be avoided by explicitly providing the file name on the command line.
 
-The \param{-a} switch will pass the \emph{a} flag to [[fopen()]]’s \emph{mode} parameter instead of \emph{w}.
+There are several command-line switches that modify \cmd{script}’s behavior.
+
+The \param{-a} switch will pass the \str{a} flag instead of \str{w} to [[fopen()]]’s [[mode]] parameter.
 If a typescript file does already exist, it will then not be overwritten; instead, the new content will be appended to the existing file.
 
-If the \param{-f} switch is used, \cmd{script} will call [[fflush()]] on the typescript file after new data has been written to it.
-This results in instant updates to the typescript file, at the expense of performance.
+By default, \cmd{script} will launch the shell specified by the environment variable \str{\$SHELL}, or, if it is not set, a default shell selected at compile time (usually \str{/bin/sh}).
+The shell will be called with \param{-i} as its first parameter, making it an interactive shell.
+However, if \cmd{script} is called with the \param{-c} option, followed by a command, it will launch the shell with \param{-c} and the command instead of \param{-i}.
+The shell will then be non-interactive and only run the specified command, then exit.
+For example, calling \cmd{script} with the parameters \param{-c 'last -5'}, the command \cmd{script} will launch is \str{/bin/sh -c 'last -5'} (of course depending on \str{\$SHELL}).
+Note that all POSIX-compatible shells have to support the \param{-i} and \param{-c} parameters.
 
-%FIXME: Continue.
+If the \param{-f} switch is used, \cmd{script} will call [[fflush()]] on the typescript file after new data has been written to it, resulting in instant updates to the typescript file, at the expense of performance.
+This is for example useful to let another user watch the actions recorded by \cmd{script} in real time.
+
+If the \param{-q} switch is not specified, \cmd{script} will display a message when it starts and quits and will also record its startup and termination it the typescript file.
+With \param{-q}, all of these messages will not appear, with one exception:
+Since \cmd{scriptreplay} will unconditionally discard the first line in a typescript file, writing the startup message (\str{"Script started on …"}) cannot be disabled.
+
+The \param{-t} switch will make \cmd{script} output timing information to \term{stderr}.
+Its format is described in section~\ref{scripttiming}.
+
+If \cmd{script} is called with \param{-V} or \param{--version} as only parameter, it will print its version and exit.
+
+Any other parameter will make \cmd{script} display an error message and exit.
 
 \subsection{File formats}
 The current implementation of \cmd{script} uses a very simple typescript file format:
@@ -158,6 +177,7 @@ Everything the client application sends to the terminal (i.e. everything printed
 Additionally, a header \str{"Script started on XXX\bs{}n"} is written, where \str{XXX} is the human-readable date and time when \cmd{script} was invoked.
 If \cmd{script} was invoked without the \param{-q} flag, an additional footer \str{"Script done on YYY\bs{}n"}, where \str{YYY} is the human-readable date and time when \cmd{script} terminated, is written.
 
+\label{scripttiming}
 Since this typescript format completely lacks timing information, the \param{-t} flag will output timing data to stderr.
 The user has to capture this output to a file by calling \cmd{script} like this: \str{script -t 2>timingfile}.
 
