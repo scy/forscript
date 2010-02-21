@@ -12,6 +12,7 @@
 % We use noweb.
 \usepackage{noweb}
 \def\cmd{\textsc}
+\def\pack{\emph}
 \def\term{\emph}
 \def\param{\texttt}
 \def\str{\texttt}
@@ -100,7 +101,7 @@ Several tasks have to be solved in this bachelor thesis:
 \item Implement a software for Linux that is used like \cmd{script}, but creates output in the new forensic output format. In order to minimize the requirements a target system has to meet to be able to run the software, it has to be implemented in the \term{C} programming language.
 \item Document the software according to the methods of \term{literate programming}.
 \end{itemize}
-\term{Literate programming}\cite{literate} is a technique invented by Donald~E. Knuth, the author of the \TeX typesetting system.
+\term{Literate programming}~\cite{literate} is a technique invented by Donald~E. Knuth, the author of the \TeX typesetting system.
 Instead of writing more or less commented source code, it propagates writing a continuous text with embedded code fragments.
 These do not necessarily appear in the order they are executed, but where they are didactically useful.
 
@@ -130,13 +131,13 @@ It talks about the future of \cmd{forscript} and describes the next steps that s
 
 \pagebreak
 \section{\cmd{script}}\label{script}
-\emph{util-linux} is the name of a collection of command-line utilities for Linux systems.
+\pack{util-linux} is the name of a collection of command-line utilities for Linux systems.
 It includes essential software like \cmd{dmesg}, \cmd{fdisk}, \cmd{mkswap}, \cmd{mount} and \cmd{shutdown} as well as the \cmd{script} and \cmd{scriptreplay} utilities.
 
-The original \emph{util-linux} package was abandoned in 2006.
-Today, it has been replaced by its successor \emph{util-linux-ng}, a fork of the last available \emph{util-linux} version.
-\emph {util-linux-ng} is under active development.
-The analysis of the original \cmd{script} utility in this thesis is based on the most recent \emph{util-linux-ng} release as of the time of writing, version 2.17.
+The original \pack{util-linux} package~\cite{util} was abandoned in 2006.
+Today, it has been replaced by its successor \pack{util-linux-ng}~\cite{utilng}, a \term{fork} based on the last available \pack{util-linux} version.
+\pack{util-linux-ng} is under active development.
+The analysis of the original \cmd{script} utility in this thesis is based on the most recent \pack{util-linux-ng} release as of the time of writing, version 2.17.
 
 \subsection{Invocation}
 \cmd{script} takes one optional argument, the file name of the typescript file to generate.
@@ -1197,6 +1198,16 @@ int main(int argc, char *argv[])
 	\emph{Literate Programming} (1992),
 	Center for the Study of Language and Information,
 	ISBN~978-0937073803.
+\bibitem{util}
+	\emph{The \pack{util-linux} project},
+	no longer maintained,
+	last release 2.13-pre7 in 2006.
+	\url{http://www.kernel.org/pub/linux/utils/util-linux/}
+\bibitem{utilng}
+	\emph{The \pack{util-linux-ng} project},
+	maintained by Karel Zak,
+	current release 2.17.
+	\url{http://userweb.kernel.org/~kzak/util-linux-ng/}
 \bibitem{linuxman}
 	\emph{The Linux \emph{man-pages} project},
 	maintained by Michael Kerrisk,
