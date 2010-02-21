@@ -105,6 +105,10 @@ Instead of writing more or less commented source code, it propagates writing a c
 These do not necessarily appear in the order they are executed, but where they are didactically useful.
 
 \subsection{Results}
+It is apparent that \cmd{script} is not suited for forensic usage, especially because it does not record the user’s input and data about the environment it is running in.
+A successor, \cmd{forscript}, has been designed and developed in this thesis.
+Its output format is portable, extensible and contains detailed information about the environment.
+The disadvantages of \cmd{script} are eliminated.
 
 \subsection{Outlook on the thesis}
 Section~\ref{intro}, which you are currently reading, contains the introduction into the topic of computer forensics.
