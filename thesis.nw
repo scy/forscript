@@ -867,11 +867,6 @@ The variable [[drain]] determines whether the child has already terminated, but 
 	int drain = 0;
 @
 
-The slave side of the PTY is no longer needed and should be closed.
-<<doio>>=
-	close(PTS);
-@
-
 Several metadata chunks need to be written.
 If the \str{-a} flag is not set, a \emph{file version} chunk is written.
 Then \emph{begin of session}, \emph{environment variables} and \emph{locale settings}.
