@@ -11,7 +11,7 @@
 
 % We use noweb.
 \usepackage{noweb}
-\def\cmd{\emph}
+\def\cmd{\textsc}
 \def\param{\texttt}
 \def\str{\texttt}
 \def\bs{\textbackslash}
