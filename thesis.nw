@@ -43,7 +43,10 @@ Supervisor: & Prof. Dr. Felix C. Freiling
 
 {\phantom{.}\vspace{5cm}}
 \abstract{
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+In computer forensics, it is important to document examination of a computer system with as much detail as possible.
+Many experts use the software \cmd{script} to record their whole terminal session while analyzing the target system.
+This thesis shows why \cmd{script}’s features are not sufficient for documentation that is to be used in court.
+A new system, \cmd{forscript}, providing additional capabilities and mechanisms will be designed and developed in this thesis.
 }
 \pagebreak
 
