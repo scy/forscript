@@ -4,6 +4,7 @@
 *.out
 *.pdf
 *.swp
+*.toc
 article.tex
 unicode.tex
 thesis.tex
