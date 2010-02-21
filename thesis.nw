@@ -1025,7 +1025,11 @@ const char *STOPMSG = "forscript done on %s, file is %s\r\n";
 
 <<done>>=
 	chunk03(status);
-	tcsetattr(0, TCSANOW, &TT);
+	fclose(OUTF);
+	close(PTM);
+	close(PTS);
+	tcsetattr(0, TCSADRAIN, &TT);
+	exit(EXIT_SUCCESS);
 }
 @
 <<includes>>=
