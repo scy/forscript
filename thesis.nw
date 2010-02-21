@@ -12,6 +12,7 @@
 % We use noweb.
 \usepackage{noweb}
 \def\cmd{\textsc}
+\def\term{\emph}
 \def\param{\texttt}
 \def\str{\texttt}
 \def\bs{\textbackslash}
@@ -57,8 +58,33 @@ A new system, \cmd{forscript}, providing additional capabilities and mechanisms 
 \section{Introduction}
 
 \subsection{Background: Computer forensics}
+Computer forensics is a branch of forensic science.
+In the digital age we live in, an increasing number of crimes is performed using or at least aided by digital devices and computer systems.
+To analyze the evidence that may be present on these devices, specially trained experts are required.
+Having knowledge about the technology behind the systems, these forensic investigators are able to search for evidence without destroying traces, modifying or even accidentally introducing misleading data.
 
-\subsubsection{Documentation of terminal sessions}
+Principles and techniques of computer forensics are, among others, employed to
+\begin{itemize}
+\item analyze computers, mobile phones and other electronic devices a suspected criminal has used,
+\item recover data after a hardware or software failure,
+\item gain information during or after attacks or break-in attempts on a computer system.
+\end{itemize}
+
+\subsubsection*{Documentation of terminal sessions}
+A forensic investigator has to keep a detailed record of his or her actions while analyzing a system.
+That way, in case of dispute about a piece of evidence, another forensic investigator can review the steps that led to certain conclusions.
+This \term{forensic log} improves the credibility of the investigator and protects a possible defendant from false accusations.
+Additionally, the investigator protects himself from forgetting how the evidence was found and what additional details (which probably seemed to be not important at that time) were present.
+
+The protocol consists of, depending on the type of analysis, notes on paper, images and videos or data files on the investigator’s computer.
+For example, to perform a \term{static analysis} of a suspect’s computer’s hard disk drive, i.e. searching the drive for suspicious data without modifying it, an investigator normally uses his computer, which is equipped with a software that records every action the investigator performs.
+
+Often a Unix-based operating system like Linux or Mac OS~X and command-line based software (also called \term{CLI software} for its command-line user interface)is used to perform such an analysis, for example \cmd{dd} to create a snapshot of the suspect’s hard drive, \cmd{sha1sum} to verify its integrity and then other tools like \cmd{foremost} to find evidence in the snapshot.
+All interaction with the forensic software takes place in a text-based interface; the investigator uses his keyboard to perform commands, his workstation responds by displaying (also called “printing”, even though the output appears on the screen, not on paper) text and data.
+A text-based interface cannot display graphics or use the mouse\footnote{Using the mouse is possible via several extensions, but mouse commands are simply translated to special control characters and can be read by the application just like any other keyboard input.}.
+
+In principle, CLI sessions can be documented quite easily by creating a piece of software that records everything typed on the keyboard and everything sent to the screen.
+The \cmd{script} utility is often used to accomplish this; however, it has several limitations described in section \ref{scriptissues} which greatly limit its usefulness as a forensic tool.
 
 \subsection{Tasks}
 
@@ -108,7 +134,7 @@ The timing file consists of tuples of delay and byte count (space-separated), on
 Each line can be read like \emph{“\emph{x} seconds after the previous output, \emph{n} more bytes were sent to the terminal”}.
 If there was no previous output (because it is the first line of timing information), the delay specifies the time between \cmd{script} invocation and the first chunk of output.
 
-\subsection{Disadvantages}
+\subsection{Disadvantages}\label{scriptissues}
 The two file formats produced by \cmd{script}, typescript and timing, show several shortcomings with regard to forensic usage:
 \begin{itemize}
 \item Input coming from the user’s keyboard is not logged at all. A common example is the user entering a command in the shell but then pressing \ctrl{C} instead of return. The shell will move to the next line and display the prompt again; there is no visible distinction whether the command was run or not.\footnote{With more recent versions of Linux and Bash, terminals which have the ECHOCTL bit set (for example via stty) will show \ctrl{C} at the end of an interrupted line, which fixes this problem to some degree. Similar issues, like finding out whether the user entered or tab-completed some text, still persist.}
