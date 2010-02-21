@@ -501,7 +501,7 @@ if ((argc == 2) &&
 @
 [[MYVERSION]] is defined as a global constant:
 <<globals>>=
-const char *MYVERSION = "0.1-git";
+const char *MYVERSION = "0.9-git";
 @
 
 The other options are parsed using the normal [[getopt()]] method, which requires \str{unistd.h}:
