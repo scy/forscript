@@ -343,6 +343,7 @@ int chunk11(struct winsize *size) {
 \subsubsection*{\str{0x12} Environment variables (arbitrary number of C strings)}
 Is written at session start.
 Contains the environment variables and their values as \str{NAME=value} pairs, each pair is terminated by a null byte (\str{0x00}).
+Since variable names may not contain the \str{=} character and neither variables names nor the values may include a null byte, the list needs no special escaping.
 
 <<chunks>>=
 int chunk12() {
@@ -369,7 +370,7 @@ int chunk12() {
 
 \subsubsection*{\str{0x13} Locale settings (seven C strings)}
 Is written at session start.
-Contains the string values of several locale settings, namely \str{LC\_ALL}, \str{LC\_COLLATE}, \str{LC\_CTYPE}, \str{LC\_MESSAGES}, \str{LC\_MONETARY}, \str{LC\_NUMERIC} and \str{LC\_TIME}, in that order.
+Contains the string values of several locale settings, namely \str{LC\_ALL}, \str{LC\_COLLATE}, \str{LC\_CTYPE}, \str{LC\_MESSAGES}, \str{LC\_MONETARY}, \str{LC\_NUMERIC} and \str{LC\_TIME}, in that order, each terminated by a null byte.
 
 <<chunks>>=
 int chunk13() {
@@ -382,7 +383,8 @@ int chunk13() {
 	for (int i = 0; i < 7; i++) {
 		if ((loc = setlocale(cat[i], "")) == NULL)
 			return -1;
-		if ((ret = chunkwd((unsigned char *)loc, strlen(loc) + 1)) < 0)
+		if ((ret = chunkwd((unsigned char *)loc,
+		                   strlen(loc) + 1)) < 0)
 			return ret;
 	}
 	if ((ret = chunkwf()) < 0)
@@ -391,7 +393,7 @@ int chunk13() {
 }
 @
 
-This chunk requires \emph{locale.h}:
+[[setlocale()]] requires \emph{locale.h}:
 <<includes>>=
 #include <locale.h>
 @
@@ -401,7 +403,7 @@ Contains the number of seconds and nanoseconds that have passed since the last d
 
 A replaying application should wait for the time specified in this chunk before advancing further in the transcript file.
 
-Since the seconds and nanoseconds are represented as integers, converting to a floating-point number would mean loss of precision.
+Since the seconds and nanoseconds are represented as integers, converting to a floating-point number would mean a loss of precision.
 Therefore both integers are subtracted independently.
 If the nanoseconds part of [[now]] is less than that of [[ts]], the seconds part has to be decreased by one for the result to be correct.
 <<chunks>>=
