@@ -7,7 +7,7 @@
 
 \PreloadUnicodePage{0}
 
-\usepackage{hyperref}
+\usepackage[pdfborder={0 0 0}]{hyperref}
 
 % We use noweb.
 \usepackage{noweb}
