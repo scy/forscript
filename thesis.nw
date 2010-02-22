@@ -442,6 +442,8 @@ Byte 5 closes the version chunk, 5 to 8 start a begin of session chunk.
 
 \pagebreak
 \section{Implementation of \cmd{forscript}}\label{implementation}
+(Here be some kind of introduction.) % FIXME
+
 For improved readability, we define the special characters as constants:
 <<constants>>=
 const unsigned char SO  = 0x0e;
@@ -456,10 +458,10 @@ const unsigned char ESCMIN = 0x0e;
 const unsigned char ESCMAX = 0x10;
 @
 
-\subsubsection{How a \cmd{forscript} file is written}
+\subsection{Writing metadata chunks to disk}
 \label{def:chunkwriters}
 The function \emph{chunkwd()} takes a pointer and a byte count as arguments and writes chunk data to the transcript file, applying required escapes on the fly.
-To improve performance, it does not write byte-per-byte, but instead scans the input data until it finds a special character.
+To improve performance, it does not write byte-by-byte, but instead scans the input data until it finds a special character.
 When it does, it writes everything up to, but not including, the special character to the file and then adds a DLE character.
 The search then goes on.
 If another special character is found, everything from the last special character (inclusive) to the current one (exclusive) plus a DLE is written.
@@ -473,7 +475,8 @@ int chunkwd(unsigned char *data, int count) {
 	while (pos < count) {
 		if (data[pos] <= ESCMAX && data[pos] >= ESCMIN) {
 			if (pos > start) {
-				if (!swrite(&data[start], sizeof(char), pos - start, OUTF))
+				if (!swrite(&data[start], sizeof(char),
+				            pos - start, OUTF))
 					return -1;
 			}
 			if (!swrite(&DLE, sizeof(DLE), 1, OUTF))
@@ -495,7 +498,8 @@ FILE *OUTF;
 
 The \emph{swrite()} function (“safe write”) that is being used here will return zero if the number of items written is not equal to the number of items that \emph{should} have been written:
 <<swrite>>=
-int swrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
+int swrite(const void *ptr, size_t size,
+           size_t nmemb, FILE *stream) {
 	return (fwrite(ptr, size, nmemb, stream) == nmemb);
 }
 @
@@ -513,7 +517,8 @@ int chunkwh(unsigned char id) {
 		if (!ret)
 			return -1;
 	}
-	return (swrite(&id, sizeof(unsigned char), 1, OUTF)) ? 1 : -1;
+	return (swrite(&id, sizeof(unsigned char),
+	               1, OUTF)) ? 1 : -1;
 }
 
 int chunkwf() {
@@ -537,6 +542,7 @@ int chunkwm(unsigned char id, unsigned char *data, int count) {
 
 If the program has to terminate abnormally, the function [[die()]] will be called.
 It will output an error message and exit the software.
+% FIXME Undo changes to terminal etc.
 <<die>>=
 void die(char *message, int chunk) {
 	fprintf(stderr, "%s: ", MYNAME);
@@ -563,6 +569,7 @@ The global variable \emph{MYNAME} contains a pointer to the name the binary was 
 char *MYNAME;
 @
 
+% FIXME Remove.
 For convenience, we define the following macro that will call [[die()]] and supply it with the chunk’s type.
 <<chunks>>=
 #define chunk(num) if (chunk##num() < 0) die(NULL, 0x##num);
@@ -622,8 +629,9 @@ if ((argc == 2) &&
 <<globals>>=
 const char *MYVERSION = "0.9-git";
 @
+% FIXME Set to 1.0.
 
-The other options are parsed using the normal [[getopt()]] method, which requires \str{unistd.h}:
+The other options are parsed using the normal [[getopt()]] method, which requires \str{unistd.h}: % FIXME Decide whether to use \str or \emph
 <<includes>>=
 #include <unistd.h>
 @
@@ -636,7 +644,7 @@ These flags are:
 int aflg = 0, fflg = 0, qflg = 0;
 @
 
-The value of the \str{-c} parameter is stored in a global string:
+The value of the \str{-c} parameter is stored in a global string pointer:
 <<globals>>=
 char *cflg = NULL;
 @
@@ -690,7 +698,8 @@ if (argc > 0) {
 	OUTN = argv[0];
 } else {
 	struct stat s;
-	if (lstat(OUTN, &s) == 0 && (S_ISLNK(s.st_mode) || s.st_nlink > 1)) {
+	if (lstat(OUTN, &s) == 0 &&
+	    (S_ISLNK(s.st_mode) || s.st_nlink > 1)) {
 		fprintf(stderr, "Warning: `%s' is a link.\n"
 		       "Use `%s [options] %s' if you really "
 		       "want to use it.\n"
@@ -711,6 +720,8 @@ if (argc > 0) {
 @
 
 The file will now be opened, either for writing or for appending, depending on [[aflg]].
+Note that if appending, the file will be opened for reading as well.
+This is because \cmd{forscript} checks the file version header before appending to a file.
 <<openoutfile>>=
 if ((OUTF = fopen(OUTN, (aflg ? "a+" : "w"))) == NULL) {
 	perror(OUTN);
@@ -729,8 +740,10 @@ if (aflg) {
 	count = fread(&buf, sizeof(char), 5, OUTF);
 	if (count == 0)
 		aflg = 0;
-	else if (count != 5 || strncmp(buf, "\x0e\x0e\x01\x01\x0f", 5) != 0)
-		die("output file is not in forscript format v1, cannot append", 0);
+	else if (count != 5 ||
+	         strncmp(buf, "\x0e\x0e\x01\x01\x0f", 5) != 0)
+		die("output file is not in forscript format v1, "
+		    "cannot append", 0);
 }
 @
 
@@ -983,10 +996,11 @@ On all Unix systems, stdin should be file descriptor~$0$, but for maximum portab
 <<doio>>=
 	fd_set fds;
 	int sr;
-	int highest = ((STDIN_FILENO > PTM) ? STDIN_FILENO : PTM) + 1;
+	int highest = ((STDIN_FILENO > PTM) ?
+	               STDIN_FILENO : PTM) + 1;
 @
 
-The variable [[drain]] determines whether the child has already terminated, but the buffers should still be drained.
+The variable [[drain]] determines whether the child has already terminated, but the buffers still have to be drained.
 <<doio>>=
 	int drain = 0;
 @
@@ -995,6 +1009,7 @@ Several metadata chunks need to be written.
 If the \str{-a} flag is not set, a \emph{file version} chunk is written.
 Then \emph{begin of session}, \emph{environment variables} and \emph{locale settings}.
 Finally [[winsize()]]’s mode $2$ is used to only write the window size to the transcript without sending a second \str{SIGWINCH} to the client.
+% FIXME Use chunks directly, not the macro.
 <<doio>>=
 	if (!aflg)
 		chunk(01);
@@ -1024,7 +1039,8 @@ This is required because \cmd{scriptreplay} assumes that the first line in the t
 		statusmsg(STARTMSG);
 @
 <<constants>>=
-const char *STARTMSG = "forscript started on %s, file is %s\r\n";
+const char *STARTMSG = "forscript started on %s, "
+                       "file is %s\r\n";
 @
 
 The main loop, which handles input and output, will run until the child process exits.
@@ -1065,18 +1081,20 @@ If drain mode is already active, [[select()]] will not have been run, therefore 
 				continue;
 @
 
-When not in drain mode, execution does not reach this point if none of the file descriptors had data available.
+Execution does not reach this point if none of the file descriptors had data available.
 Thus it can be assumed that data will be written to the transcript file.
 Therefore [[chunk16()]] is called to calculate and write a delay meta chunk.
 After it has calculated the time delta, it will automatically update [[ts]] to contain the current time.
 <<doio>>=
 			chunk16(&ts);
 @
+% FIXME Check return value.
 
 If user input is available, it will be read into the buffer.
 The data will then be written to the transcript file, having [[SO]] prepended and [[SI]] appended.
 Then it will be sent to the client application.
 When in drain mode, user input is irrelevant since the child has already terminated.
+% FIXME Check what happens to user input when the child has exited, it should not be lost.
 <<doio>>=
 			if (FD_ISSET(STDIN_FILENO, &fds)) {
 				count = read(STDIN_FILENO, iobuf, BUFSIZ);
@@ -1103,7 +1121,7 @@ If there was no data to read, the buffer has been drained, drain mode ends and t
 		}
 @
 
-If the \str{-f} flag has been specified on the command line, the file should be flushed now.
+If the \str{-f} flag has been specified on the command line, the file should be flushed now that data has been written.
 <<doio>>=
 		if (fflg)
 			fflush(OUTF);
@@ -1127,7 +1145,7 @@ void finish(int signal) {
 }
 @
 
-[[UNUSED]] is a macro that causes your compiler to stop warning about an unused parameter:
+[[UNUSED]] is a macro that causes the compiler to stop warning about an unused parameter:
 <<macros>>=
 #define UNUSED(var) while (0) { (void)(var); }
 @
@@ -1144,9 +1162,11 @@ If the \str{-q} flag has not been supplied, \cmd{forscript} will write a shutdow
 		statusmsg(STOPMSG);
 @
 <<constants>>=
-const char *STOPMSG = "forscript done on %s, file is %s\r\n";
+const char *STOPMSG = "forscript done on %s, "
+                      "file is %s\r\n";
 @
 
+(Here be some text describing [[done()]].) % FIXME Also, check return values.
 <<done>>=
 	chunk03(status);
 	fclose(OUTF);
@@ -1160,7 +1180,7 @@ const char *STOPMSG = "forscript done on %s, file is %s\r\n";
 #include <sys/wait.h>
 @
 
-
+(Here be additional text describing the structure.) % FIXME
 
 <<forscript.c>>=
 <<featuretest>>
