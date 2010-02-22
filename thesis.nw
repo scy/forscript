@@ -287,7 +287,7 @@ int chunk02() {
 	if ((ret = clock_gettime(CLOCK_REALTIME, &now)) < 0)
 		return ret;
 	secs = htonl(now.tv_sec);
-	if (now.tv_nsec < 2000000000L && now.tv_nsec > -2000000000L)
+	if (now.tv_nsec < 1000000000L && now.tv_nsec > -1000000000L)
 		nanos = htonl(now.tv_nsec);
 	tzset();
 	tzone = htons((uint16_t)(timezone / -60));
