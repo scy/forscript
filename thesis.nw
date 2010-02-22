@@ -340,11 +340,6 @@ int chunk11(struct winsize *size) {
 }
 @
 
-This chunk requires \emph{ioctl.h} for [[ioctl()]]:
-<<includes>>=
-#include <sys/ioctl.h>
-@
-
 \subsubsection*{\str{0x12} Environment variables (arbitrary number of C strings)}
 Is written at session start.
 Contains the environment variables and their values as \str{NAME=value} pairs, each pair is terminated by a null byte (\str{0x00}).
@@ -845,6 +840,11 @@ void winsize(unsigned int mode) {
 	if ((mode & 1) && PTM)
 		ioctl(PTM, TIOCSWINSZ, &size);
 }
+@
+
+Retrieving the window size requires \emph{ioctl.h} for [[ioctl()]]:
+<<includes>>=
+#include <sys/ioctl.h>
 @
 
 The client PTY’s window size will be initialized now.
