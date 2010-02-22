@@ -9,7 +9,6 @@
 
 \usepackage[pdfborder={0 0 0}]{hyperref}
 
-% We use noweb.
 \usepackage{noweb}
 \def\cmd{\textsc}
 \def\pack{\emph}
@@ -33,10 +32,10 @@ Secondary examiner: & Dipl.-Inf. Andreas Dewald \\
 Supervisor: & Prof. Dr. Felix C. Freiling
 \end{tabular}
 }
-% The fun begins.
 \begin{document}
 
 \maketitle
+\begin{center}Bachelorstudiengang Software- und Internettechnologie\end{center}
 \thispagestyle{empty}
 
 \pagebreak
@@ -64,7 +63,7 @@ Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium dolor
 \section{Introduction}\label{intro}
 
 \subsection{Background: Computer forensics}
-Computer forensics is a branch of forensic science.
+Computer forensics is a branch of forensic science.~\cite{casey}
 In the digital age we live in, an increasing number of crimes is performed using or at least aided by digital devices and computer systems.
 To analyze the evidence that may be present on these devices, specially trained experts are required.
 Having knowledge about the technology behind the systems, these forensic investigators are able to search for evidence without destroying traces, modifying or even accidentally introducing misleading data.
@@ -104,12 +103,14 @@ Several tasks have to be solved in this bachelor thesis:
 \term{Literate programming}~\cite{literate} is a technique invented by Donald~E. Knuth, the author of the \TeX typesetting system.
 Instead of writing more or less commented source code, it propagates writing a continuous text with embedded code fragments.
 These do not necessarily appear in the order they are executed, but where they are didactically useful.
+The software \cmd{noweb}~\cite{noweb} is used to generate the layouted thesis as well as the final program’s source code out of a single file.
 
 \subsection{Results}
 It is apparent that \cmd{script} is not suited for forensic usage, especially because it does not record the user’s input and data about the environment it is running in.
 A successor, \cmd{forscript}, has been designed and developed in this thesis.
 Its output format is portable, extensible and contains detailed information about the environment.
 The disadvantages of \cmd{script} are eliminated.
+Following the paradigm of literate programming, this thesis is \cmd{forscript} and vice versa.
 
 \subsection{Outlook on the thesis}
 Section~\ref{intro}, which you are currently reading, contains the introduction into the topic of computer forensics.
@@ -129,7 +130,6 @@ The resulting application will be evaluated in section~\ref{evaluation}, which i
 Finally, section~\ref{summary} summarizes the work that has been done.
 It talks about the future of \cmd{forscript} and describes the next steps that should probably be taken to make it even more useful.
 
-\pagebreak
 \section{\cmd{script}}\label{script}
 \pack{util-linux} is the name of a collection of command-line utilities for Linux systems.
 It includes essential software like \cmd{dmesg}, \cmd{fdisk}, \cmd{mkswap}, \cmd{mount} and \cmd{shutdown} as well as the \cmd{script} and \cmd{scriptreplay} utilities.
@@ -203,7 +203,6 @@ The two file formats produced by \cmd{script}, typescript and timing, show sever
 \item Appending to a typescript file is possible, but ambigious, since the beginning of a new part is determined only by the string \str{"Script started on~…"}. Also, appending to a typescript and recording timing information are incompatible, because \cmd{scriptreplay} will only ignore the first header line in a typescript file. Subsequent ones will disturb the timing’s byte counter.
 \end{itemize}
 
-\pagebreak
 \section{Design of \cmd{forscript}}\label{design}
 \subsection{File format}
 A \cmd{forscript} data file (called a \emph{transcript file}) consists of the mostly unaltered output stream of the client application, but includes blocks of additional data (called \emph{control chunks}) at arbitrary positions.
@@ -440,7 +439,6 @@ Byte 5 closes the version chunk, 5 to 8 start a begin of session chunk.
 
 \subsection{Invocation}
 
-\pagebreak
 \section{Implementation of \cmd{forscript}}\label{implementation}
 (Here be some kind of introduction.) % FIXME
 
@@ -1229,19 +1227,27 @@ int main(int argc, char *argv[])
 }
 @
 
-\pagebreak
 \section{Evaluation}\label{evaluation}
 
-\pagebreak
 \section{Summary}\label{summary}
 
 \pagebreak
 \begin{thebibliography}{9}
+\bibitem{casey}
+	Casey, Eoghan:
+	\emph{Digital Evidence and Computer Crime} (2nd edition, 2004),
+	Academic Press,
+	ISBN~978-0121631048.
 \bibitem{literate}
 	Knuth, Donald~E.:
 	\emph{Literate Programming} (1992),
 	Center for the Study of Language and Information,
 	ISBN~978-0937073803.
+\bibitem{noweb}
+	\emph{Noweb~— A simple, Extensible Tool for Literate Programming},
+	created and maintained by Norman Ramsey,
+	current release 2.11b.
+	\url{http://www.cs.tufts.edu/~nr/noweb/}
 \bibitem{util}
 	\emph{The \pack{util-linux} project},
 	no longer maintained,
