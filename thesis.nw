@@ -21,7 +21,7 @@
 
 \titlehead{University of Mannheim\\Laboratory for Dependable Distributed Systems}
 \subject{\vspace{3cm}Bachelor Thesis}
-\title{Design~and~implementation~of a~forensic~documentation~tool for~interactive~command\mbox{-}line~sessions}
+\title{Design~and~Implementation~of a~Forensic~Documentation~Tool for~Interactive~Command\mbox{-}line~Sessions}
 \author{Tim Weber}
 \date{February 23, 2010}
 \publishers{
@@ -62,7 +62,7 @@ Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium dolor
 \pagenumbering{arabic}
 \section{Introduction}\label{intro}
 
-\subsection{Background: Computer forensics}
+\subsection{Background: Computer Forensics}
 Computer forensics is a branch of forensic science.~\cite{casey}
 In the digital age we live in, an increasing number of crimes is performed using or at least aided by digital devices and computer systems.
 To analyze the evidence that may be present on these devices, specially trained experts are required.
@@ -75,7 +75,7 @@ Principles and techniques of computer forensics are, among others, employed to
 \item gain information during or after attacks or break-in attempts on a computer system.
 \end{itemize}
 
-\subsubsection*{Documentation of terminal sessions}
+\subsubsection*{Documentation of Terminal Sessions}
 A forensic investigator has to keep a detailed record of his or her actions while analyzing a system.
 That way, in case of dispute about a piece of evidence, another forensic investigator can review the steps that led to certain conclusions.
 This \term{forensic log} improves the credibility of the investigator and protects a possible defendant from false accusations.
@@ -112,7 +112,7 @@ Its output format is portable, extensible and contains detailed information abou
 The disadvantages of \cmd{script} are eliminated.
 Following the paradigm of literate programming, this thesis is \cmd{forscript} and vice versa.
 
-\subsection{Outlook on the thesis}
+\subsection{Outlook on the Thesis}
 Section~\ref{intro}, which you are currently reading, contains the introduction into the topic of computer forensics.
 It explains why detailed documentation of forensic analyses is an important task, what a command-line interface is, which subjects will be presented in this thesis and also provides an overview of the tasks and results.
 
@@ -172,7 +172,7 @@ If \cmd{script} is called with \param{-V} or \param{--version} as only parameter
 
 Any other parameter will make \cmd{script} display an error message and exit.
 
-\subsection{File formats}
+\subsection{File Formats}
 \subsubsection{Typescript}
 The current implementation of \cmd{script} uses a very simple typescript file format:
 Everything the client application sends to the terminal, i.e. everything printed on screen, will be written to the file, byte by byte, including control characters that are used for various tasks like setting colors, positioning the cursor etc.
@@ -205,19 +205,19 @@ The two file formats produced by \cmd{script}, typescript and timing, show sever
 \end{itemize}
 
 \section{Design of \cmd{forscript}}\label{design}
-\subsection{File format}
+\subsection{File Format}
 A \cmd{forscript} data file (called a \emph{transcript file}) consists of the mostly unaltered output stream of the client application, but includes blocks of additional data (called \emph{control chunks}) at arbitrary positions.
 A control chunk is started by a \emph{shift out} byte (\str{0x0e}) and terminated by a \emph{shift in} byte (\str{0x0f}).
 Each control chunk is either an input chunk or a metadata chunk.
 
-\subsubsection{Input chunks}
+\subsubsection{Input Chunks}
 Input chunks contain the data that is sent to the client application’s input stream, which is usually identical to the user’s keyboard input.
 They are of arbitrary length and terminate at the \emph{shift in} byte.
 If a literal \emph{shift out} or \emph{shift in} byte needs to appear in an input chunk’s data, it is escaped by prepending a \emph{data link escape} byte (\str{0x10}).
 If a literal \emph{data link escape} byte needs to appear in an input chunk’s data, it has to be doubled (i.e., \str{0x10 0x10}).
 For example, if the user sends the byte sequence \str{0x4e 0x0f 0x00 0x61 0x74 0x10}, the complete input chunk written to the transcript file is \str{0x0e 0x4e 0x10 0x0f 0x00 0x61 0x74 0x10 0x10 0x0f}.
 
-\subsubsection{Metadata chunks}
+\subsubsection{Metadata Chunks}
 Metadata chunks, also called meta chunks, contain additional information about the file or the application’s status, for example environment variables, terminal settings or time stamps.
 They contain an additional \emph{shift out} byte at the beginning, followed by a byte that determines the type of metadata that follows.
 The available types are described below.
@@ -227,7 +227,7 @@ For example, the “terminal size” meta type is introduced by its type byte \s
 The information “terminal size is 80×16 characters” would be written to the transcript file as \str{0x0e 0x0e 0x11 0x00 0x50 0x00 0x10 0x10 0x0f}.
 Note that the least significant byte of the number 16 has to be written as \str{0x10 0x10} to prevent the special meaning of \str{0x10} to escape the following \str{0x0f}.
 
-\subsubsection{Properties of the file format}
+\subsubsection{Properties of the File Format}
 This basic file format design has several advantages:
 \begin{itemize}
 \item New meta chunk types can be introduced while still allowing older tools to read the file, because the escaping rules are simple and the parsing application need not know a fixed length of each type.
@@ -236,7 +236,7 @@ This basic file format design has several advantages:
 \item Converting a \cmd{forscript} file to a \cmd{script} file is basically as easy as removing everything between \emph{shift out} and \emph{shift in} bytes (while respecting escaping rules, of course).
 \end{itemize}
 
-\subsection{Metadata chunk types}
+\subsection{Metadata Chunk Types}
 The next sections will describe the available metadata chunk types.
 Integers are unsigned and big endian, except where noted otherwise.
 In the resulting file, numbers are represented in binary form, not as ASCII digits.
@@ -253,7 +253,7 @@ Therefore, \cmd{forscript} should terminate whenever a chunk function returns a 
 
 A transcript file needs to begin with a \emph{file version} meta chunk, followed directly by the first \emph{start of session} chunk.
 
-\subsubsection*{\str{0x01} File version (1 byte)}
+\subsubsection*{\str{0x01} File Version (1 byte)}
 The transcript file must start with a meta chunk of this type; there may be no other data before it.
 
 Denotes the version of the \cmd{forscript} file format that is being used for this file.
@@ -267,7 +267,7 @@ int chunk01() {
 }
 @
 
-\subsubsection*{\str{0x02} Begin of session (10 bytes)}
+\subsubsection*{\str{0x02} Begin of Session (10 bytes)}
 Denotes the start of a new \cmd{forscript} session.
 The first four data bytes represent the start time as the number of seconds since the Unix Epoch.
 The next four bytes contain a signed representation of the nanosecond offset to the number of seconds.
@@ -305,7 +305,7 @@ This chunk requires \emph{time.h} for [[clock_gettime()]], \emph{inet.h} for [[h
 #include <string.h>
 @
 
-\subsubsection*{\str{0x03} End of session (1 byte)}
+\subsubsection*{\str{0x03} End of Session (1 byte)}
 Denotes the end of a \cmd{forscript} session.
 The data byte contains the return value of the child process.
 The usual exit code convention applies:
@@ -326,7 +326,7 @@ int chunk03(int status) {
 }
 @
 
-\subsubsection*{\str{0x11} Terminal size (two 2-byte values)}
+\subsubsection*{\str{0x11} Terminal Size (two 2-byte values)}
 Is written at session start and when the size of the terminal window changes.
 The first data word contains the number of colums, the second one the number of rows.
 
@@ -340,7 +340,7 @@ int chunk11(struct winsize *size) {
 }
 @
 
-\subsubsection*{\str{0x12} Environment variables (arbitrary number of C strings)}
+\subsubsection*{\str{0x12} Environment Variables (arbitrary number of C strings)}
 Is written at session start.
 Contains the environment variables and their values as \str{NAME=value} pairs, each pair is terminated by a null byte (\str{0x00}).
 Since variable names may not contain the \str{=} character and neither variables names nor the values may include a null byte, the list needs no special escaping.
@@ -368,7 +368,7 @@ int chunk12() {
 }
 @
 
-\subsubsection*{\str{0x13} Locale settings (seven C strings)}
+\subsubsection*{\str{0x13} Locale Settings (seven C strings)}
 Is written at session start.
 Contains the string values of several locale settings, namely \str{LC\_ALL}, \str{LC\_COLLATE}, \str{LC\_CTYPE}, \str{LC\_MESSAGES}, \str{LC\_MONETARY}, \str{LC\_NUMERIC} and \str{LC\_TIME}, in that order, each terminated by a null byte.
 
@@ -429,7 +429,7 @@ int chunk16(struct timespec *ts) {
 }
 @
 
-\subsection{Magic number}
+\subsection{Magic Number}
 Since a \cmd{forscript} file has to start with a file version chunk followed by a begin of session chunk, there is a distinctive eight-byte signature at the beginning of each file:
 \begin{verbatim}
 0x0e 0x0e 0x01 0x?? 0x0f 0x0e 0x0e 0x02
@@ -457,7 +457,7 @@ const unsigned char ESCMIN = 0x0e;
 const unsigned char ESCMAX = 0x10;
 @
 
-\subsection{Writing metadata chunks to disk}
+\subsection{Writing Metadata Chunks to Disk}
 \label{def:chunkwriters}
 The function \emph{chunkwd()} takes a pointer and a byte count as arguments and writes chunk data to the transcript file, applying required escapes on the fly.
 To improve performance, it does not write byte-by-byte, but instead scans the input data until it finds a special character.
@@ -597,7 +597,7 @@ void statusmsg(const char *msg) {
 
 \subsection{Initialization}
 
-\subsubsection{Determining the binary name}
+\subsubsection{Determining the Binary’s Name}
 To be able to output its own name (e.g. in error messages), \cmd{forscript} determines the name of the binary that has been called by the user.
 This value is stored in [[argv[0]]].
 The global variable [[MYNAME]] will be used to reference that value from every function that needs it.
@@ -613,7 +613,7 @@ This is done by moving the pointer to the character immediately following the fi
 }
 @
 
-\subsubsection{Command line arguments}
+\subsubsection{Command Line Arguments}
 Since \cmd{forscript}’s invocation tries to mimic \cmd{script}’s as far as possible, command line argument handling is designed to closely resemble \cmd{script}’s behavior as far as possible.
 Therefore, like in \cmd{script}, the command line switches \str{--version} and \str{-V} are treated seperately.
 If there is exactly one command line argument and it is one of these, \cmd{forscript} will print its version and terminate.
@@ -690,7 +690,7 @@ If there was no name supplied on the command line, the default name is \str{tran
 This differs from \cmd{script}’s default name \str{typescript} intentionally, because the file format is different and can, for example, not be displayed directly using \cmd{cat}.
 If there are any scripts or constructs that assume the default output file name to be \str{typescript}, the chance that replacing \cmd{script} with \cmd{forscript} will break their functionality anyway is quite high.
 
-\subsubsection{Opening the output file}
+\subsubsection{Opening the Output File}
 As in \cmd{script}, there is a safety warning if no file name was supplied and \str{transcript} exists and is a (hard or soft) link.
 <<openoutfile>>=
 if (argc > 0) {
@@ -746,7 +746,7 @@ if (aflg) {
 }
 @
 
-\subsection{Preparing a new pseudo terminal}
+\subsection{Preparing a New Pseudo Terminal}
 While \cmd{script} uses manual PTY allocation (by trying out device names) or BSD’s [[openpty()]] where available, \cmd{forscript} uses the PTY multiplexer (\str{/dev/ptmx}) standardized in POSIX.1-2001 to create a new PTY.
 This method requires \str{fcntl.h} and a sufficiently high feature test macro value for POSIX code.
 <<includes>>=
@@ -830,7 +830,7 @@ This means that in the eyes of the user the terminal’s behavior will not chang
 }
 @
 
-\subsubsection{Managing window size}
+\subsubsection{Managing Window Size}
 If the size of a terminal window changes, the controlling process receives a \str{SIGWINCH} signal and should act accordingly.
 \cmd{forscript} handles this signal in the [[resized()]] function by writing the new size to the transcript and forwarding it to the client terminal.
 <<resized>>=
@@ -868,11 +868,11 @@ Writing the size to the transcript however would put the window size meta chunk 
 	winsize(1);
 @
 
-\subsection{Launching subprocesses}
+\subsection{Launching Subprocesses}
 The original \cmd{script} uses one process to listen for input, one to listen for output and one to initialize and [[execl()]] the command to be recorded.
 \cmd{forscript} in contrast uses only the [[select()]] function to be notified of pending input and output and therefore only needs two processes: Itself and the subcommand.
 
-\subsubsection{Registering signal handlers}
+\subsubsection{Registering Signal Handlers}
 To be notified of an exiting subprocess, a handler for the \str{SIGCHLD} signal needs to be defined.
 This signal is sent by the operating system if any child process’s run status changes, i.e. it is stopped (\str{SIGSTOP}), continued (\str{SIGCONT}) or it exits.
 \cmd{script} terminates if the child is stopped, but \cmd{forscript} does not.
@@ -917,7 +917,7 @@ else
 	doio();
 @
 
-\subsection{Running the target application}
+\subsection{Running the Target Application}
 The [[doshell()]] function is run in the child process, whose only task it is to set up all required PTY redirections and then execute the client command.
 Therefore, open file descriptors from the parent process which are no longer needed are closed early.
 <<doshell>>=
@@ -972,7 +972,7 @@ If execution reaches code after [[execl()]], an error occured and the child proc
 }
 @
 
-\subsection{Handling input and output}
+\subsection{Handling Input and Output}
 While \cmd{script} forks twice and utilizes seperate processes to handle input and output to and from the client application, \cmd{forscript} uses a single process for both tasks, taking advantage of the [[select()]] function (defined in \str{select.h}) that allows it to monitor several open file descriptors at once.
 <<includes>>=
 #include <sys/select.h>
@@ -1134,7 +1134,7 @@ If the main loop exits, the child has terminated.
 }
 @
 
-\subsection{Finishing execution}
+\subsection{Finishing Execution}
 Since a signal handler can handle more than one signal, its number is passed as an argument.
 However, [[finish()]] only handles \str{SIGCHLD}, therefore it will ignore its argument.
 <<finish>>=
