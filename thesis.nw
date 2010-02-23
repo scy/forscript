@@ -1432,22 +1432,22 @@ Finally, the exit status ($0$) of the shell is recorded in an \emph{end of sessi
 	\emph{Noweb~— A simple, Extensible Tool for Literate Programming},
 	created and maintained by Norman Ramsey,
 	current release 2.11b.
-	\url{http://www.cs.tufts.edu/~nr/noweb/}
+	\\\url{http://www.cs.tufts.edu/~nr/noweb/}
 \bibitem{util}
 	\emph{The \pack{util-linux} project},
 	no longer maintained,
 	last release 2.13-pre7 in 2006.
-	\url{http://www.kernel.org/pub/linux/utils/util-linux/}
+	\\\url{http://www.kernel.org/pub/linux/utils/util-linux/}
 \bibitem{utilng}
 	\emph{The \pack{util-linux-ng} project},
 	maintained by Karel Zak,
 	current release 2.17.
-	\url{http://userweb.kernel.org/~kzak/util-linux-ng/}
+	\\\url{http://userweb.kernel.org/~kzak/util-linux-ng/}
 \bibitem{linuxman}
 	\emph{The Linux \emph{man-pages} project},
 	maintained by Michael Kerrisk,
 	release~3.23.
-	\url{http://www.kernel.org/doc/man-pages/}
+	\\\url{http://www.kernel.org/doc/man-pages/}
 \end{thebibliography}
 
 % This is where it all ends.
