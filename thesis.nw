@@ -1229,6 +1229,27 @@ int main(int argc, char *argv[])
 @
 
 \section{Evaluation}\label{evaluation}
+\subsection{Compiling \cmd{forscript}}
+\cmd{forscript} is written conforming to the C99 and POSIX-1.2001 standards, with portability in mind.
+It has been developed on a machine running Linux~\cite{kernel} 2.6.32, using glibc~\cite{glibc} 2.10 and GCC~\cite{gcc} 4.4.3.
+The following command line is an example of how to compile \cmd{forscript}:
+\begin{verbatim}
+gcc -std=c99 -Wl,-lrt -g -o forscript -Wall \
+    -Wextra -pedantic -fstack-protector-all -pipe forscript.c
+\end{verbatim}
+
+To generate \str{forscript.c} out of the \pack{noweb} source code, the following command line can be used:
+\begin{verbatim}
+notangle -Rforscript.c thesis.nw > forscript.c
+\end{verbatim}
+
+On the author’s machine, \cmd{forscript} can be compiled without any compiler warnings.
+It has also been successfully compiled on NetBSD.
+
+Since Apple Mac OS~X in its current version 10.6.2 lacks support for the real-time extension of POSIX, the [[clock_gettime()]] function required by \cmd{forscript} is not natively available.
+Therefore the code described in this thesis can in its current state not be compiled on OS~X.
+However, it should be possible to create a function emulating [[clock_gettime()]] and then port \cmd{forscript} to OS~X.
+
 \subsection{Example Transcript File}
 To demonstrate \cmd{forscript}’s output, the following pages contain a commented \term{hex dump} of a transcript file created on the author’s machine.
 The dump has been created using \str{hexdump -C transcript}.
@@ -1418,7 +1439,7 @@ Finally, the exit status ($0$) of the shell is recorded in an \emph{end of sessi
 \section{Summary}\label{summary}
 
 \pagebreak
-\begin{thebibliography}{9}
+\begin{thebibliography}{99}
 \bibitem{casey}
 	Casey, Eoghan:
 	\emph{Digital Evidence and Computer Crime} (2nd edition, 2004),
@@ -1449,6 +1470,21 @@ Finally, the exit status ($0$) of the shell is recorded in an \emph{end of sessi
 	maintained by Michael Kerrisk,
 	release~3.23.
 	\\\url{http://www.kernel.org/doc/man-pages/}
+\bibitem{kernel}
+	\emph{The Linux kernel},
+	maintained by Linus Torvalds,
+	release~2.6.31.
+	\\\url{http://www.kernel.org/}
+\bibitem{glibc}
+	\emph{GNU C Library},
+	maintained by Ulrich Drepper,
+	release~2.10.
+	\\\url{http://www.gnu.org/software/libc/}
+\bibitem{gcc}
+	\emph{GNU Compiler Collection},
+	maintained by its steering committee,
+	release~4.4.3.
+	\\\url{http://gcc.gnu.org/}
 \end{thebibliography}
 
 % This is where it all ends.
