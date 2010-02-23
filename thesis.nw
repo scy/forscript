@@ -583,12 +583,6 @@ The global variable [[MYNAME]] contains a pointer to the name the binary was cal
 char *MYNAME;
 @
 
-% FIXME Remove.
-For convenience, we define the following macro that will call [[die()]] and supply it with the chunk’s type.
-<<chunks>>=
-#define chunk(num) if (chunk##num() < 0) die(NULL, 0x##num);
-@
-
 The [[statusmsg()]] function writes a string to both the terminal and the transcript:
 <<statusmsg>>=
 void statusmsg(const char *msg) {
@@ -1026,10 +1020,14 @@ Finally [[winsize()]]’s mode $2$ is used to only write the window size to the 
 % FIXME Use chunks directly, not the macro.
 <<doio>>=
 	if (!aflg)
-		chunk(01);
-	chunk(02);
-	chunk(12);
-	chunk(13);
+		if (chunk01() < 0)
+			die(NULL, 0x01);
+	if (chunk02() < 0)
+		die(NULL, 0x02);
+	if (chunk12() < 0)
+		die(NULL, 0x12);
+	if (chunk13() < 0)
+		die(NULL, 0x13);
 	winsize(2);
 @
 
