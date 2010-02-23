@@ -497,6 +497,7 @@ Now you know how \cmd{forscript} stores the recorded terminal session and how it
 You have seen the code that writes the various metadata chunks.
 After this soft introduction to \cmd{forscript}’s implementation, the next section contains the rest of the code and will talk in detail about how the software works.
 
+\pagebreak
 \section{Implementation of \cmd{forscript}}\label{implementation}
 This section will describe the code of \cmd{forscript} in detail.
 You will learn how the software hooks into the input and output stream of the client application and how it reacts to things like window size changes or the child terminating.
@@ -674,7 +675,7 @@ This is done by moving the pointer to the character immediately following the fi
 @
 
 \subsubsection{Command Line Arguments}
-Since \cmd{forscript}’s invocation tries to mimic \cmd{script}’s as far as possible, command line argument handling is designed to closely resemble \cmd{script}’s behavior as far as possible.
+Since \cmd{forscript}’s invocation tries to mimic \cmd{script}’s as far as possible, command line argument handling is designed to closely resemble \cmd{script}’s behavior.
 Therefore, like in \cmd{script}, the command line switches \str{--version} and \str{-V} are treated seperately.
 If there is exactly one command line argument and it is one of these, \cmd{forscript} will print its version and terminate.
 <<getopt>>=
