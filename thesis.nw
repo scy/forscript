@@ -639,9 +639,8 @@ if ((argc == 2) &&
 @
 [[MYVERSION]] is defined as a global constant:
 <<globals>>=
-const char *MYVERSION = "0.9-git";
+const char *MYVERSION = "1.0";
 @
-% FIXME Set to 1.0.
 
 The other options are parsed using the normal [[getopt()]] method, which requires \str{unistd.h}: % FIXME Decide whether to use \str or \emph
 <<includes>>=
