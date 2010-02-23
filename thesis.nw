@@ -1114,7 +1114,6 @@ If user input is available, it will be read into the buffer.
 The data will then be written to the transcript file, having [[SO]] prepended and [[SI]] appended.
 Then it will be sent to the client application.
 When in drain mode, user input is irrelevant since the child has already terminated.
-% FIXME Check what happens to user input when the child has exited, it should not be lost.
 <<doio>>=
 			if (FD_ISSET(STDIN_FILENO, &fds)) {
 				count = read(STDIN_FILENO, iobuf, BUFSIZ);
