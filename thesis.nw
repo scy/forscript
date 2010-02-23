@@ -322,7 +322,7 @@ int chunk02() {
 }
 @
 
-This chunk requires \str{time.h} for [[clock_gettime()]], \str{inet.h} for [[htonl()]] and \str{string.h} for [[memcpy()]]:
+This chunk requires the headers \str{time.h} for [[clock_gettime()]], \str{inet.h} for [[htonl()]] and \str{string.h} for [[memcpy()]]:
 <<includes>>=
 #include <time.h>
 #include <arpa/inet.h>
@@ -733,7 +733,7 @@ After the options have been parsed, the output file name will be determined and 
 char *OUTN = "transcript";
 @
 
-If there was no name supplied on the command line, the default name is \str{transcript}.
+If there was no file name supplied on the command line, the default name is \str{transcript}.
 This differs from \cmd{script}’s default name \str{typescript} intentionally, because the file format is different and can, for example, not be displayed directly using \cmd{cat}.
 If there are any scripts or constructs that assume the default output file name to be \str{typescript}, the chance that replacing \cmd{script} with \cmd{forscript} will break their functionality anyway is quite high.
 
@@ -794,7 +794,7 @@ if (aflg) {
 @
 
 \subsection{Preparing a New Pseudo Terminal}
-While \cmd{script} uses manual PTY allocation (by trying out device names) or BSD’s [[openpty()]] where available, \cmd{forscript} uses the Unix~98 PTY multiplexer (\str{/dev/ptmx}) standardized in POSIX.1-2001 to create a new PTY.
+While \cmd{script} uses manual PTY allocation (by trying out device names) or BSD’s [[openpty()]] where available, \cmd{forscript} has been designed to use the Unix~98 PTY multiplexer (\str{/dev/ptmx}) standardized in POSIX.1-2001 to create a new PTY.
 This method requires \str{fcntl.h} and a sufficiently high feature test macro value for POSIX code.
 <<includes>>=
 #include <fcntl.h>
