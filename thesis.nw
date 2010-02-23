@@ -555,10 +555,13 @@ int chunkwm(unsigned char id, unsigned char *data, int count) {
 @
 
 If the program has to terminate abnormally, the function [[die()]] will be called.
-It will output an error message and exit the software.
-% FIXME Undo changes to terminal etc.
+After resetting the terminal attributes and telling a possible child process to exit, it will output an error message and exit the software.
 <<die>>=
 void die(char *message, int chunk) {
+	if (TTSET)
+		tcsetattr(STDERR_FILENO, TCSADRAIN, &TT);
+	if (CHILD > 0)
+		kill(CHILD, SIGTERM);
 	fprintf(stderr, "%s: ", MYNAME);
 	if (chunk != 0) {
 		fprintf(stderr, "metadata chunk %02x failed", chunk);
@@ -772,14 +775,19 @@ int PTM = 0, PTS = 0;
 
 Additionally, the settings of the terminal \cmd{forscript} runs in will be saved in the global variable [[TT]].
 This variable is used to duplicate the terminal’s settings to the newly created PTY as well as to restore the terminal settings as soon as \cmd{forscript} terminates.
+There is also a variable [[TTSET]] which stores whether the settings have been written to [[TT]].
+This is important when restoring the terminal settings after a failure:
+If the settings have not yet been written to [[TT]], applying them will lead to undefined behavior.
 <<globals>>=
 struct termios TT;
+int TTSET = 0;
 @
 <<openpt>>=
 if (tcgetattr(STDIN_FILENO, &TT) < 0) {
 	perror("tcgetattr");
 	die("tcgetattr failed", 0);
 }
+TTSET = 1;
 @
 The \str{termios} structure is defined in \str{termios.h}.
 <<includes>>=
