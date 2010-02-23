@@ -776,7 +776,7 @@ This variable is used to duplicate the terminal’s settings to the newly create
 struct termios TT;
 @
 <<openpt>>=
-if (tcgetattr(0, &TT) < 0) {
+if (tcgetattr(STDIN_FILENO, &TT) < 0) {
 	perror("tcgetattr");
 	die("tcgetattr failed", 0);
 }
@@ -837,7 +837,7 @@ This means that in the eyes of the user the terminal’s behavior will not chang
 	rtt.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
 	rtt.c_cflag &= ~(CSIZE | PARENB);
 	rtt.c_cflag |= CS8;
-	if (tcsetattr(0, TCSANOW, &rtt) < 0) {
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &rtt) < 0) {
 		perror("tcsetattr stdin");
 		die("tcsetattr stdin failed", 0);
 	}
@@ -865,7 +865,7 @@ If the mode is $3$, both operations will be done, which is the usual case.
 <<winsize>>=
 void winsize(unsigned int mode) {
 	struct winsize size;
-	ioctl(0, TIOCGWINSZ, &size);
+	ioctl(STDIN_FILENO, TIOCGWINSZ, &size);
 	if (mode & 2)
 		if (chunk11(&size) < 0)
 			die("writing window size", 0x11);
@@ -953,9 +953,9 @@ In order to do that, it has to be placed in a seperate session.
 
 Standard input, output and error are bound to the PTY slave, which can then be closed.
 <<doshell>>=
-	dup2(PTS, 0);
-	dup2(PTS, 1);
-	dup2(PTS, 2);
+	dup2(PTS, STDIN_FILENO);
+	dup2(PTS, STDOUT_FILENO);
+	dup2(PTS, STDERR_FILENO);
 	close(PTS);
 @
 If the environment variable \str{\$SHELL} is set, its value is used.
@@ -1193,7 +1193,7 @@ const char *STOPMSG = "forscript done on %s, "
 	fclose(OUTF);
 	close(PTM);
 	close(PTS);
-	if (tcsetattr(0, TCSADRAIN, &TT) < 0) {
+	if (tcsetattr(STDIN_FILENO, TCSADRAIN, &TT) < 0) {
 		perror("tcsetattr on exit");
 		die("tcsetattr on exit failed", 0);
 	}
