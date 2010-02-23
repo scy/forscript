@@ -55,8 +55,21 @@ A new system, \cmd{forscript}, providing additional capabilities and mechanisms 
 \pagebreak
 
 \section*{Acknowledgements}
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+First of all, I would like to thank Prof. Dr. Freiling for the opportunity to write a thesis about this interesting subject and for supporting me during the process of writing.
+
+I would also like to thank Andreas Dewald for being available as secondary examiner and Prof. Dr.-Ing. Effelsberg for postponing my thesis deadline.
+
+Thanks to Alexander Brock for testing and fuzzing \cmd{forscript} as well as proofreading the thesis.
+
+Michael Stapelberg, thank you for testing \cmd{forscript} and for giving me some hints about Unix system calls and why \cmd{script} does some things the way it does.
+
+Many thanks go to the free software community:
+The people who created C, GCC, Git, \LaTeX, Linux, make, noweb, script and Vim, but especially those who create comprehensive documentation.
+I would like to explicitly mention the BSD \emph{termios(4)} manual page as an example of how good documentation should look like.
+
+Thanks to my father for giving me the time to study at my own pace, and thanks to the hacker community for inspiring me every day.
+
+Finally, I would like to thank Nathalie for the love, support and understanding before, during and after this thesis.
 
 \pagebreak
 \pagenumbering{arabic}
