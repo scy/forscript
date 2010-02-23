@@ -100,7 +100,7 @@ Several tasks have to be solved in this bachelor thesis:
 \item Implement a software for Linux that is used like \cmd{script}, but creates output in the new forensic output format. In order to minimize the requirements a target system has to meet to be able to run the software, it has to be implemented in the \term{C} programming language.
 \item Document the software according to the methods of \term{literate programming}.
 \end{itemize}
-\term{Literate programming}~\cite{literate} is a technique invented by Donald~E. Knuth, the author of the \TeX typesetting system.
+\term{Literate programming}~\cite{literate} is a technique invented by Donald~E. Knuth, the author of the \TeX{} typesetting system.
 Instead of writing more or less commented source code, it propagates writing a continuous text with embedded code fragments.
 These do not necessarily appear in the order they are executed, but where they are didactically useful.
 The software \cmd{noweb}~\cite{noweb} is used to generate the layouted thesis as well as the final program’s source code out of a single file.
@@ -298,7 +298,7 @@ int chunk02() {
 }
 @
 
-This chunk requires \emph{time.h} for [[clock_gettime()]], \emph{inet.h} for [[htonl()]] and \emph{string.h} for [[memcpy()]]:
+This chunk requires \str{time.h} for [[clock_gettime()]], \str{inet.h} for [[htonl()]] and \str{string.h} for [[memcpy()]]:
 <<includes>>=
 #include <time.h>
 #include <arpa/inet.h>
@@ -393,7 +393,7 @@ int chunk13() {
 }
 @
 
-[[setlocale()]] requires \emph{locale.h}:
+[[setlocale()]] requires \str{locale.h}:
 <<includes>>=
 #include <locale.h>
 @
@@ -517,7 +517,7 @@ int swrite(const void *ptr, size_t size,
 	return (fwrite(ptr, size, nmemb, stream) == nmemb);
 }
 @
-To be able to use [[fwrite()]], \emph{stdio.h} has to be included:
+To be able to use [[fwrite()]], \str{stdio.h} has to be included:
 <<includes>>=
 #include <stdio.h>
 @
@@ -574,11 +574,11 @@ void die(char *message, int chunk) {
 	exit(EXIT_FAILURE);
 }
 @
-[[exit()]] requires \emph{stdlib.h}:
+[[exit()]] requires \str{stdlib.h}:
 <<includes>>=
 #include <stdlib.h>
 @
-The global variable \emph{MYNAME} contains a pointer to the name the binary was called as and is set in [[main()]].
+The global variable [[MYNAME]] contains a pointer to the name the binary was called as and is set in [[main()]].
 <<globals>>=
 char *MYNAME;
 @
@@ -645,7 +645,7 @@ const char *MYVERSION = "0.9-git";
 @
 % FIXME Set to 1.0.
 
-The other options are parsed using the normal [[getopt()]] method, which requires \str{unistd.h}: % FIXME Decide whether to use \str or \emph
+The other options are parsed using the normal [[getopt()]] method, which requires \str{unistd.h}:
 <<includes>>=
 #include <unistd.h>
 @
@@ -871,7 +871,7 @@ void winsize(unsigned int mode) {
 }
 @
 
-Retrieving the window size requires \emph{ioctl.h} for [[ioctl()]]:
+Retrieving the window size requires \str{ioctl.h} for [[ioctl()]]:
 <<includes>>=
 #include <sys/ioctl.h>
 @
@@ -1193,8 +1193,6 @@ const char *STOPMSG = "forscript done on %s, "
 <<includes>>=
 #include <sys/wait.h>
 @
-
-(Here be additional text describing the structure.) % FIXME
 
 \subsection{Putting It All Together}
 The code contained in the last sections is assembled into a single C source file, starting with feature test macros, ordinary macros and include statements.
