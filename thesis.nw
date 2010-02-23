@@ -139,6 +139,21 @@ Today, it has been replaced by its successor \pack{util-linux-ng}~\cite{utilng},
 \pack{util-linux-ng} is under active development.
 The analysis of the original \cmd{script} utility in this thesis is based on the most recent \pack{util-linux-ng} release as of the time of writing, version 2.17.
 
+\subsection{Purpose}
+The purpose of \cmd{script} is to record everything printed to the user’s terminal into a file.
+According to its manual, “[i]t is useful for students who need a hardcopy record of an interactive session as proof of an assignment”.
+
+It can also record timing data, specifying the chronological progress of the terminal session, into a second file.
+Using both of these files, the accompanying utility \cmd{scriptreplay} can display the recorded data in a video-like way.
+
+\subsection{Mode of Operation}
+In order to record the terminal session, \cmd{script} creates a new \term{pseudo terminal} (PTY), which is a virtual, software-based representation of a terminal line, and attach itself to the “master” side of it, thereby being able to send and receive data to and from an application connected to the “slave” side of the PTY.
+
+It launches a subprocess (also known as \term{child}), which launches the actual client application as its own subchild and then records the client application’s output stream.
+The parent process forwards the user’s input to the client application.
+
+Recording terminates as soon as the child process exits.
+
 \subsection{Invocation}
 \cmd{script} takes one optional argument, the file name of the output file (also called \term{typescript} file) to generate.
 If the argument is omitted, the file will be named \str{typescript}, except when the file already exists and is a symbolic or hard link:
