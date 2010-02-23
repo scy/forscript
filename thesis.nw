@@ -776,7 +776,10 @@ This variable is used to duplicate the terminal’s settings to the newly create
 struct termios TT;
 @
 <<openpt>>=
-tcgetattr(0, &TT);
+if (tcgetattr(0, &TT) < 0) {
+	perror("tcgetattr");
+	die("tcgetattr failed", 0);
+}
 @
 The \str{termios} structure is defined in \str{termios.h}.
 <<includes>>=
@@ -834,8 +837,14 @@ This means that in the eyes of the user the terminal’s behavior will not chang
 	rtt.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
 	rtt.c_cflag &= ~(CSIZE | PARENB);
 	rtt.c_cflag |= CS8;
-	tcsetattr(0, TCSANOW, &rtt);
-	tcsetattr(PTS, TCSANOW, &TT);
+	if (tcsetattr(0, TCSANOW, &rtt) < 0) {
+		perror("tcsetattr stdin");
+		die("tcsetattr stdin failed", 0);
+	}
+	if (tcsetattr(PTS, TCSANOW, &TT) < 0) {
+		perror("tcsetattr pts");
+		die("tcsetattr pts failed", 0);
+	}
 }
 @
 
@@ -1017,7 +1026,6 @@ Several metadata chunks need to be written.
 If the \str{-a} flag is not set, a \emph{file version} chunk is written.
 Then \emph{begin of session}, \emph{environment variables} and \emph{locale settings}.
 Finally [[winsize()]]’s mode $2$ is used to only write the window size to the transcript without sending a second \str{SIGWINCH} to the client.
-% FIXME Use chunks directly, not the macro.
 <<doio>>=
 	if (!aflg)
 		if (chunk01() < 0)
@@ -1098,9 +1106,9 @@ Thus it can be assumed that data will be written to the transcript file.
 Therefore [[chunk16()]] is called to calculate and write a delay meta chunk.
 After it has calculated the time delta, it will automatically update [[ts]] to contain the current time.
 <<doio>>=
-			chunk16(&ts);
+			if (chunk16(&ts) < 0)
+				die(NULL, 0x16);
 @
-% FIXME Check return value.
 
 If user input is available, it will be read into the buffer.
 The data will then be written to the transcript file, having [[SO]] prepended and [[SI]] appended.
@@ -1178,13 +1186,17 @@ const char *STOPMSG = "forscript done on %s, "
                       "file is %s\r\n";
 @
 
-(Here be some text describing [[done()]].) % FIXME Also, check return values.
+(Here be some text describing [[done()]].) % FIXME
 <<done>>=
-	chunk03(status);
+	if (chunk03(status) < 0)
+		die(NULL, 0x03);
 	fclose(OUTF);
 	close(PTM);
 	close(PTS);
-	tcsetattr(0, TCSADRAIN, &TT);
+	if (tcsetattr(0, TCSADRAIN, &TT) < 0) {
+		perror("tcsetattr on exit");
+		die("tcsetattr on exit failed", 0);
+	}
 	exit(EXIT_SUCCESS);
 }
 @
