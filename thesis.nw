@@ -1196,50 +1196,62 @@ const char *STOPMSG = "forscript done on %s, "
 
 (Here be additional text describing the structure.) % FIXME
 
+\subsection{Putting It All Together}
+The code contained in the last sections is assembled into a single C source file, starting with feature test macros, ordinary macros and include statements.
 <<forscript.c>>=
 <<featuretest>>
 <<macros>>
 <<includes>>
+@
 
+Afterwards, constants and global variables are defined.
+<<forscript.c>>=
 <<constants>>
-
 <<globals>>
+@
 
+The functions used in the code are put in an order that makes sure every function is defined before it is called.
+Since [[die()]] is required at many places, it is put first.
+Next, all the chunk writing functions appear (the helper functions first).
+<<forscript.c>>=
 <<die>>
-
 <<swrite>>
-
 <<chunkw>>
-
 <<chunkwhf>>
-
 <<chunkwm>>
-
 <<chunks>>
+@
 
+The code continues with the startup and shutdown functions.
+<<forscript.c>>=
 <<statusmsg>>
-
 <<done>>
+@
 
+Next, the signal handlers.
+<<forscript.c>>=
 <<finish>>
-
 <<winsize>>
-
 <<resized>>
+@
 
+The two functions that represent the parent and child processes are defined next.
+<<forscript.c>>=
 <<doshell>>
-
 <<doio>>
+@
 
-int main(int argc, char *argv[])
-{
+Finally, the [[main()]] function decides the order in which the steps described in this chapter are executed.
+Since neither the parent nor the child process should ever reach the end of [[main()]], it returns [[EXIT_FAILURE]].
+<<forscript.c>>=
+int main(int argc, char *argv[]) {
 	<<setmyname>>
 	<<getopt>>
 	<<openoutfile>>
 	<<openpt>>
 	<<sigchld>>
 	<<fork>>
-	return EXIT_SUCCESS;
+	return EXIT_FAILURE;
 }
 @
 
