@@ -676,7 +676,7 @@ This is done by moving the pointer to the character immediately following the fi
 
 \subsubsection{Command Line Arguments}
 Since \cmd{forscript}’s invocation tries to mimic \cmd{script}’s as far as possible, command line argument handling is designed to closely resemble \cmd{script}’s behavior.
-Therefore, like in \cmd{script}, the command line switches \str{--version} and \str{-V} are treated seperately.
+Therefore, like in \cmd{script}, the command line switches \str{--version} and \str{-V} are treated separately.
 If there is exactly one command line argument and it is one of these, \cmd{forscript} will print its version and terminate.
 <<getopt>>=
 if ((argc == 2) &&
@@ -1002,7 +1002,7 @@ void doshell() {
 
 \subsubsection*{Changing the Terminal}
 Next, the child process changes its controlling terminal to be the PTY slave.
-In order to do that, it has to be placed in a seperate session.
+In order to do that, it has to be placed in a separate session.
 <<doshell>>=
 	setsid();
 	if (ioctl(PTS, TIOCSCTTY, 0) < 0) {
@@ -1058,7 +1058,7 @@ If execution reaches code after [[execl()]], an error occured and the child proc
 @
 
 \subsection{Handling Input and Output}
-While \cmd{script} forks twice and utilizes seperate processes to handle input and output to and from the client application, \cmd{forscript} uses a single process for both tasks, taking advantage of the [[select()]] function (defined in \str{select.h}) that allows it to monitor several open file descriptors at once.
+While \cmd{script} forks twice and utilizes separate processes to handle input and output to and from the client application, \cmd{forscript} uses a single process for both tasks, taking advantage of the [[select()]] function (defined in \str{select.h}) that allows it to monitor several open file descriptors at once.
 <<includes>>=
 #include <sys/select.h>
 @
@@ -1380,7 +1380,7 @@ Its first eight bytes, (\str{4b} to \str{e3}) tell you that the time is $1266864
 The next two bytes, \str{00 3c} represent a timezone of $60$ which translates to UTC+01:00.
 
 After this chunk, the environment variables are listed.
-These are \str{name=value} pairs, seperated by null bytes.
+These are \str{name=value} pairs, separated by null bytes.
 This information is important to interpret the actual terminal data:
 For example, different control codes are used depending on the \str{TERM} variable’s setting.
 \begin{verbatim}
