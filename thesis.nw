@@ -917,7 +917,7 @@ Writing the size to the transcript however would put the window size meta chunk 
 The original \cmd{script} uses one process to listen for input, one to listen for output and one to initialize and [[execl()]] the command to be recorded.
 \cmd{forscript} in contrast uses only the [[select()]] function to be notified of pending input and output and therefore only needs two processes: Itself and the subcommand.
 
-\subsubsection{Registering Signal Handlers}
+\subsubsection*{Registering Signal Handlers}
 To be notified of an exiting subprocess, a handler for the \str{SIGCHLD} signal needs to be defined.
 This signal is usually sent by the operating system if any child process’s run status changes, i.e. it is stopped (\str{SIGSTOP}), continued (\str{SIGCONT}) or it exits.
 \cmd{script} terminates if the child is stopped, but \cmd{forscript} does not, because it uses the \str{SA\_NOCLDSTOP} flag to specify that it wishes not to be notified about the child stopping or resuming.
@@ -938,7 +938,7 @@ These functions and constants require \str{signal.h}.
 #include <signal.h>
 @
 
-\subsubsection{Forking}
+\subsubsection*{Forking}
 When a progam calls the [[fork()]] function, the operating system basically clones the program into a new process that is a subprocess of the caller.
 Both processes continue to run at the next command after the [[fork()]] call, but the value [[fork()]] returned will be different:
 The child will see a return value of [[0]], while the parent will retrieve the process ID of the child.
@@ -971,7 +971,7 @@ void doshell() {
 	fclose(OUTF);
 @
 
-\subsubsection{Changing the Terminal}
+\subsubsection*{Changing the Terminal}
 Next, the child process changes its controlling terminal to be the PTY slave.
 In order to do that, it has to be placed in a seperate session.
 <<doshell>>=
@@ -993,7 +993,7 @@ Standard input, output and error are bound to the PTY slave, which can then be c
 	close(PTS);
 @
 
-\subsubsection{Determining the Shell}
+\subsubsection*{Determining the Shell}
 If the environment variable \str{\$SHELL} is set, its value is used.
 Otherwise the default is \str{/bin/sh}, which should exist on all Unix systems.
 <<doshell>>=
@@ -1010,7 +1010,7 @@ Next, the name of the shell, without any path components, is determined to be us
 		shname++;
 @
 
-\subsubsection{Executing the Shell}
+\subsubsection*{Executing the Shell}
 Finally, the [[execl()]] function is used to replace the currently running \cmd{forscript} process with the shell that has just been selected.
 If a target command has been specified using the \str{-c} option, it will be passed to the shell.
 Else, an interactive shell is launched using the \str{-i} option.
