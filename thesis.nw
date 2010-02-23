@@ -473,6 +473,7 @@ Error messages will be printed to \emph{stderr}.
 \section{Implementation of \cmd{forscript}}\label{implementation}
 (Here be some kind of introduction.) % FIXME
 
+\subsection{Constants}
 For improved readability, we define the special characters as constants:
 <<constants>>=
 const unsigned char SO  = 0x0e;
@@ -515,7 +516,8 @@ int chunkwd(unsigned char *data, int count) {
 		}
 		pos++;
 	}
-	if (!swrite(&data[start], sizeof(char), pos - start, OUTF))
+	if (!swrite(&data[start], sizeof(char),
+	            pos - start, OUTF))
 		return -3;
 	return escaped;
 }
@@ -569,6 +571,7 @@ int chunkwm(unsigned char id, unsigned char *data, int count) {
 }
 @
 
+\subsection{Error Handling}
 If the program has to terminate abnormally, the function [[die()]] will be called.
 After resetting the terminal attributes and telling a possible child process to exit, it will output an error message and exit the software.
 <<die>>=
@@ -601,6 +604,7 @@ The global variable [[MYNAME]] contains a pointer to the name the binary was cal
 char *MYNAME;
 @
 
+\subsection{Startup and Shutdown Messages}
 The [[statusmsg()]] function writes a string to both the terminal and the transcript:
 <<statusmsg>>=
 void statusmsg(const char *msg) {
@@ -774,7 +778,7 @@ if (aflg) {
 @
 
 \subsection{Preparing a New Pseudo Terminal}
-While \cmd{script} uses manual PTY allocation (by trying out device names) or BSD’s [[openpty()]] where available, \cmd{forscript} uses the PTY multiplexer (\str{/dev/ptmx}) standardized in POSIX.1-2001 to create a new PTY.
+While \cmd{script} uses manual PTY allocation (by trying out device names) or BSD’s [[openpty()]] where available, \cmd{forscript} uses the Unix~98 PTY multiplexer (\str{/dev/ptmx}) standardized in POSIX.1-2001 to create a new PTY.
 This method requires \str{fcntl.h} and a sufficiently high feature test macro value for POSIX code.
 <<includes>>=
 #include <fcntl.h>
@@ -915,8 +919,8 @@ The original \cmd{script} uses one process to listen for input, one to listen fo
 
 \subsubsection{Registering Signal Handlers}
 To be notified of an exiting subprocess, a handler for the \str{SIGCHLD} signal needs to be defined.
-This signal is sent by the operating system if any child process’s run status changes, i.e. it is stopped (\str{SIGSTOP}), continued (\str{SIGCONT}) or it exits.
-\cmd{script} terminates if the child is stopped, but \cmd{forscript} does not.
+This signal is usually sent by the operating system if any child process’s run status changes, i.e. it is stopped (\str{SIGSTOP}), continued (\str{SIGCONT}) or it exits.
+\cmd{script} terminates if the child is stopped, but \cmd{forscript} does not, because it uses the \str{SA\_NOCLDSTOP} flag to specify that it wishes not to be notified about the child stopping or resuming.
 The function [[finish()]] handles the child’s termination.
 The second signal handler, [[resized()]], handles window size changes.
 <<sigchld>>=
