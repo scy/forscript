@@ -219,7 +219,16 @@ The two file formats produced by \cmd{script}, typescript and timing, show sever
 \item Appending to a typescript file is possible, but ambigious, since the beginning of a new part is determined only by the string \str{"Script started on~…"}. Also, appending to a typescript and recording timing information are incompatible, because \cmd{scriptreplay} will only ignore the first header line in a typescript file. Subsequent ones will disturb the timing’s byte counter.
 \end{itemize}
 
+\subsection*{Summary}
+This section has presented the background, purpose and operation of \cmd{script}.
+We have learned that because of several lacking features, using it in computer forensics is problematic.
+The next section will introduce a software without these disadvantages.
+
 \section{Design of \cmd{forscript}}\label{design}
+In this section, the new file format as used by \cmd{forscript} will be specified.
+You will learn about how input, output and metadata are combined into a single output file.
+After describing the format’s characteristics, the invocation syntax, which is designed to be compatible to \cmd{script}, will be presented.
+
 \subsection{File Format}
 A \cmd{forscript} data file (called a \emph{transcript file}) consists of the mostly unaltered output stream of the client application, but includes blocks of additional data (called \emph{control chunks}) at arbitrary positions.
 A control chunk is started by a \emph{shift out} byte (\str{0x0e}) and terminated by a \emph{shift in} byte (\str{0x0f}).
@@ -470,11 +479,18 @@ If unsupported parameters are passed, \cmd{forscript} will print a short usage s
 While running, the client application’s output will be printed to \emph{stdout}.
 Error messages will be printed to \emph{stderr}.
 
+\subsection*{Summary}
+Now you know how \cmd{forscript} stores the recorded terminal session and how it will be called by the user.
+You have seen the code that writes the various metadata chunks.
+After this soft introduction to \cmd{forscript}’s implementation, the next section contains the rest of the code and will talk in detail about how the software works.
+
 \section{Implementation of \cmd{forscript}}\label{implementation}
-(Here be some kind of introduction.) % FIXME
+This section will describe the code of \cmd{forscript} in detail.
+You will learn how the software hooks into the input and output stream of the client application and how it reacts to things like window size changes or the child terminating.
+Other interesting topics include how to launch a subprocess and change its controlling terminal as well as how to read from multiple data streams at one without having to run separate processes.
 
 \subsection{Constants}
-For improved readability, we define the special characters as constants:
+For improved readability, we define the special characters introduced in the previous section as constants:
 <<constants>>=
 const unsigned char SO  = 0x0e;
 const unsigned char SI  = 0x0f;
@@ -1306,6 +1322,8 @@ int main(int argc, char *argv[]) {
 @
 
 \section{Evaluation}\label{evaluation}
+In order to show you what the code you have just seen actually does, this section contains instructions on how to compile it, and it features an example transcript file analyzed in detail.
+
 \subsection{Compiling \cmd{forscript}}
 \cmd{forscript} is written conforming to the C99 and POSIX-1.2001 standards, with portability in mind.
 It has been developed on a machine running Linux~\cite{kernel} 2.6.32, using glibc~\cite{glibc} 2.10 and GCC~\cite{gcc} 4.4.3.
