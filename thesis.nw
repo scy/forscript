@@ -439,6 +439,21 @@ The fourth byte contains the version number, which is currently \str{0x01} but m
 Byte 5 closes the version chunk, 5 to 8 start a begin of session chunk.
 
 \subsection{Invocation}
+\cmd{forscript}’s invocation syntax has been designed to be compatible to \cmd{script}, most parameters result in the same behavior.
+The following list contains additional notes and describes the differences to \cmd{script}:
+
+\begin{itemize}
+\item \param{-a} (append): If the target transcript file already exists and is non-empty, it has to start with a valid and supported \emph{file version} header.
+\item \param{-c} (command) and \param{-f} (flush): Identical to \cmd{script}.
+\item \param{-q} (quiet): In contrast to \cmd{script}, no startup message will be written to the transcript file.
+\item \param{-t} (timing): This parameter will be accepted, but ignored. \cmd{forscript} always records timing information.
+\item \param{-V} and \param{--version}: Identical to \cmd{script}, both will make \cmd{forscript} output its version information and terminate. The parameter has to be the only one specified on the command line, else an error message will be printed.
+\end{itemize}
+
+If unsupported parameters are passed, \cmd{forscript} will print a short usage summary to \emph{stderr} and exit.
+
+While running, the client application’s output will be printed to \emph{stdout}.
+Error messages will be printed to \emph{stderr}.
 
 \section{Implementation of \cmd{forscript}}\label{implementation}
 (Here be some kind of introduction.) % FIXME
