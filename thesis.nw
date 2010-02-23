@@ -66,7 +66,7 @@ Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium dolor
 Computer forensics is a branch of forensic science.~\cite{casey}
 In the digital age we live in, an increasing number of crimes is performed using or at least aided by digital devices and computer systems.
 To analyze the evidence that may be present on these devices, specially trained experts are required.
-Having knowledge about the technology behind the systems, these forensic investigators are able to search for evidence without destroying traces, modifying or even accidentally introducing misleading data.
+Having knowledge about the technology behind the systems, these forensic investigators are able to search for evidence without destroying traces, modifying or even accidentally inserting misleading data.
 
 Principles and techniques of computer forensics are, among others, employed to
 \begin{itemize}
@@ -81,11 +81,11 @@ That way, in case of dispute about a piece of evidence, another forensic investi
 This \term{forensic log} improves the credibility of the investigator and protects a possible defendant from false accusations.
 Additionally, the investigator protects himself from forgetting how the evidence was found and what additional details (which probably seemed to be not important at that time) were present.
 
-The protocol consists of, depending on the type of analysis, notes on paper, images and videos or data files on the investigator’s computer.
+The protocol consists of, depending on the type of analysis, notes on paper, images, videos and data files on the investigator’s computer.
 For example, to perform a \term{static analysis} of a suspect’s computer’s hard disk drive, i.e. searching the drive for suspicious data without modifying it, an investigator normally uses his computer, which is equipped with a software that records every action the investigator performs.
 
-Often a Unix-based operating system like Linux or Mac OS~X and command-line based software (also called \term{CLI software} for its command-line user interface)is used to perform such an analysis, for example \cmd{dd} to create a snapshot of the suspect’s hard drive, \cmd{sha1sum} to verify its integrity and then other tools like \cmd{foremost} to find evidence in the snapshot.
-All interaction with the forensic software takes place in a text-based interface; the investigator uses his keyboard to perform commands, his workstation responds by displaying (also called “printing”, even though the output appears on the screen, not on paper) text and data.
+Often a Unix-based operating system like Linux or Mac OS~X and command-line based software (also called \term{CLI software} for its command-line user interface) is used to perform such an analysis, for example \cmd{dd} to create a snapshot of the suspect’s hard drive, \cmd{sha1sum} to verify its integrity and other tools like \cmd{foremost} to find evidence in the snapshot.
+All interaction with the forensic software takes place in a text-based interface; the investigator uses his keyboard to perform commands, his workstation responds by displaying\footnote{also called “printing”, even though the output appears on the screen, not on paper} text and data.
 A text-based interface cannot display graphics or use the mouse\footnote{Using the mouse is possible via several extensions, but mouse commands are simply translated to special control characters and can be read by the application just like any other keyboard input.}.
 
 In principle, CLI sessions can be documented quite easily by creating a piece of software that records everything typed on the keyboard and everything sent to the screen.
@@ -141,7 +141,7 @@ The analysis of the original \cmd{script} utility in this thesis is based on the
 
 \subsection{Invocation}
 \cmd{script} takes one optional argument, the file name of the output file (also called \term{typescript} file) to generate.
-If the argument is omitted, the file will be named \str{typescript}, except when the file already exists and is a (symbolic or hard) link:
+If the argument is omitted, the file will be named \str{typescript}, except when the file already exists and is a symbolic or hard link:
 \cmd{script} then refuses to overwrite the file, apparently for safety reasons.
 This check can be avoided by explicitly providing the file name on the command line.
 
@@ -150,17 +150,18 @@ There are several command-line switches that modify \cmd{script}’s behavior.
 The \param{-a} switch will pass the \str{a} flag instead of \str{w} to [[fopen()]]’s [[mode]] parameter.
 If a typescript file does already exist, it will then not be overwritten; instead, the new content will be appended to the existing file.
 
-By default, \cmd{script} will launch the shell specified by the environment variable \str{\$SHELL}, or, if it is not set, a default shell selected at compile time (usually \str{/bin/sh}).
+By default, \cmd{script} will launch the shell specified by the environment variable \str{\$SHELL}.
+If \str{\$SHELL} it is not set, a default shell selected at compile time (usually \str{/bin/sh}).
 The shell will be called with \param{-i} as its first parameter, making it an interactive shell.
 However, if \cmd{script} is called with the \param{-c} option, followed by a command, it will launch the shell with \param{-c} and the command instead of \param{-i}.
 The shell will then be non-interactive and only run the specified command, then exit.
-For example, calling \cmd{script} with the parameters \param{-c 'last -5'}, the command \cmd{script} will launch is \str{/bin/sh -c 'last -5'} (of course depending on \str{\$SHELL}).
+For example, called with the parameters \param{-c 'last -5'}, \cmd{script} will launch \str{/bin/sh -c 'last -5'} (or whatever shell is defined in \str{\$SHELL}).
 Note that all POSIX-compatible shells have to support the \param{-i} and \param{-c} parameters.
 
 If the \param{-f} switch is used, \cmd{script} will call [[fflush()]] on the typescript file after new data has been written to it, resulting in instant updates to the typescript file, at the expense of performance.
-This is for example useful to let another user watch the actions recorded by \cmd{script} in real time.
+This is for example useful for letting another user watch the actions recorded by \cmd{script} in real time.
 
-If the \param{-q} switch is not specified, \cmd{script} will display a message when it starts and quits and will also record its startup and termination it the typescript file.
+If the \param{-q} switch is not specified, \cmd{script} will display a message when it starts or quits and also record its startup and termination it the typescript file.
 With \param{-q}, all of these messages will not appear, with one exception:
 Since \cmd{scriptreplay} will unconditionally discard the first line in a typescript file, writing the startup message (\str{"Script started on …"}) cannot be disabled.
 
@@ -174,7 +175,7 @@ Any other parameter will make \cmd{script} display an error message and exit.
 \subsection{File formats}
 \subsubsection{Typescript}
 The current implementation of \cmd{script} uses a very simple typescript file format:
-Everything the client application sends to the terminal (i.e. everything printed on screen) will be written to the file, byte by byte, including control characters that are used for various tasks like setting colors, positioning the cursor etc.
+Everything the client application sends to the terminal, i.e. everything printed on screen, will be written to the file, byte by byte, including control characters that are used for various tasks like setting colors, positioning the cursor etc.
 Additionally, a header \str{"Script started on XXX\bs{}n"} is written, where \str{XXX} is the human-readable date and time when \cmd{script} was invoked.
 If \cmd{script} was invoked without the \param{-q} flag, an additional footer \str{"Script done on YYY\bs{}n"}, where \str{YYY} is the human-readable date and time when \cmd{script} terminated, is written.
 
@@ -214,7 +215,7 @@ Input chunks contain the data that is sent to the client application’s input s
 They are of arbitrary length and terminate at the \emph{shift in} byte.
 If a literal \emph{shift out} or \emph{shift in} byte needs to appear in an input chunk’s data, it is escaped by prepending a \emph{data link escape} byte (\str{0x10}).
 If a literal \emph{data link escape} byte needs to appear in an input chunk’s data, it has to be doubled (i.e., \str{0x10 0x10}).
-For example, if the user sends the byte sequence \str{0x4e 0x0f 0x00 0x61 0x74 0x10}, the complete input chunk that will be written to the transcript file is \str{0x0e 0x4e 0x10 0x0f 0x00 0x61 0x74 0x10 0x10 0x0f}.
+For example, if the user sends the byte sequence \str{0x4e 0x0f 0x00 0x61 0x74 0x10}, the complete input chunk written to the transcript file is \str{0x0e 0x4e 0x10 0x0f 0x00 0x61 0x74 0x10 0x10 0x0f}.
 
 \subsubsection{Metadata chunks}
 Metadata chunks, also called meta chunks, contain additional information about the file or the application’s status, for example environment variables, terminal settings or time stamps.
