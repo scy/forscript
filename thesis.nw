@@ -687,7 +687,7 @@ if ((argc == 2) &&
 @
 [[MYVERSION]] is defined as a global constant:
 <<globals>>=
-const char *MYVERSION = "1.0";
+const char *MYVERSION = "1.0.0";
 @
 
 The other options are parsed using the normal [[getopt()]] method, which requires \str{unistd.h}:
@@ -1611,7 +1611,7 @@ Additionally, we will approach the maintainers of \cmd{script} and the forensic 
 \bibitem{forscript}
 	\emph{forscript},
 	created and maintained by Tim Weber,
-	release~1.0.
+	release~1.0.0.
 	\\\url{http://scytale.name/proj/forscript/}
 \end{thebibliography}
 
