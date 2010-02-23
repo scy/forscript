@@ -971,20 +971,29 @@ void doshell() {
 	fclose(OUTF);
 @
 
+\subsubsection{Changing the Terminal}
 Next, the child process changes its controlling terminal to be the PTY slave.
 In order to do that, it has to be placed in a seperate session.
 <<doshell>>=
 	setsid();
-	ioctl(PTS, TIOCSCTTY, 0);
+	if (ioctl(PTS, TIOCSCTTY, 0) < 0) {
+		perror("controlling terminal");
+		die("controlling terminal failed", 0);
+	}
 @
 
 Standard input, output and error are bound to the PTY slave, which can then be closed.
 <<doshell>>=
-	dup2(PTS, STDIN_FILENO);
-	dup2(PTS, STDOUT_FILENO);
-	dup2(PTS, STDERR_FILENO);
+	if ((dup2(PTS, STDIN_FILENO)  < 0) ||
+	    (dup2(PTS, STDOUT_FILENO) < 0) ||
+	    (dup2(PTS, STDERR_FILENO) < 0)) {
+		perror("dup2");
+		die("dup2 failed", 0);
+	}
 	close(PTS);
 @
+
+\subsubsection{Determining the Shell}
 If the environment variable \str{\$SHELL} is set, its value is used.
 Otherwise the default is \str{/bin/sh}, which should exist on all Unix systems.
 <<doshell>>=
@@ -1000,6 +1009,8 @@ Next, the name of the shell, without any path components, is determined to be us
 	else
 		shname++;
 @
+
+\subsubsection{Executing the Shell}
 Finally, the [[execl()]] function is used to replace the currently running \cmd{forscript} process with the shell that has just been selected.
 If a target command has been specified using the \str{-c} option, it will be passed to the shell.
 Else, an interactive shell is launched using the \str{-i} option.
@@ -1184,6 +1195,7 @@ If the main loop exits, the child has terminated.
 \subsection{Finishing Execution}
 Since a signal handler can handle more than one signal, its number is passed as an argument.
 However, [[finish()]] only handles \str{SIGCHLD}, therefore it will ignore its argument.
+Its only task is setting [[CHILD]] to $-1$, which will cause the main loop to exit as soon as possible.
 <<finish>>=
 void finish(int signal) {
 	UNUSED(signal);
@@ -1196,10 +1208,17 @@ void finish(int signal) {
 #define UNUSED(var) while (0) { (void)(var); }
 @
 
+The function [[done()]] is called as soon as the main loop terminates.
+It cleans up the environment, resets the terminal and finishes execution.
+First, it has to fetch the exit status of the child process using [[wait()]].
 <<done>>=
 void done() {
 	int status;
 	wait(&status);
+@
+To be able to use [[wait()]], \str{wait.h} must be included.
+<<includes>>=
+#include <sys/wait.h>
 @
 
 If the \str{-q} flag has not been supplied, \cmd{forscript} will write a shutdown message to both the terminal and the transcript file.
@@ -1212,7 +1231,7 @@ const char *STOPMSG = "forscript done on %s, "
                       "file is %s\r\n";
 @
 
-(Here be some text describing [[done()]].) % FIXME
+Finally, it will write an \emph{end of session} chunk, close open file descriptors, reset the terminal and exit.
 <<done>>=
 	if (chunk03(status) < 0)
 		die(NULL, 0x03);
@@ -1225,9 +1244,6 @@ const char *STOPMSG = "forscript done on %s, "
 	}
 	exit(EXIT_SUCCESS);
 }
-@
-<<includes>>=
-#include <sys/wait.h>
 @
 
 \subsection{Putting It All Together}
