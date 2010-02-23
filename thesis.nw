@@ -141,7 +141,7 @@ The analysis of the original \cmd{script} utility in this thesis is based on the
 
 \subsection{Invocation}
 \cmd{script} takes one optional argument, the file name of the output file (also called \term{typescript} file) to generate.
-If the argument is omitted, the file will be named \emph{typescript}, except when the file already exists and is a (symbolic or hard) link:
+If the argument is omitted, the file will be named \str{typescript}, except when the file already exists and is a (symbolic or hard) link:
 \cmd{script} then refuses to overwrite the file, apparently for safety reasons.
 This check can be avoided by explicitly providing the file name on the command line.
 
@@ -1228,6 +1228,191 @@ int main(int argc, char *argv[])
 @
 
 \section{Evaluation}\label{evaluation}
+\subsection{Example Transcript File}
+To demonstrate \cmd{forscript}’s output, the following pages contain a commented \term{hex dump} of a transcript file created on the author’s machine.
+The dump has been created using \str{hexdump -C transcript}.
+Since metadata chunks do not necessarily start or end at a 16-byte border, the dump has been cut into distinct pieces, bytes not belonging to the current logical unit being replaced by whitespace.
+The hex dump consists of several three-colum lines.
+The first two columns contain 16~bytes of data represented in hexadecimal form, eight bytes each.
+The third column represents these 16~bytes interpreted as ASCII characters, nonprintable characters are replaced with a single dot.
+
+The transcript starts with a \emph{file version} chunk, specifying that version 1 is used:
+\begin{verbatim}
+0e 0e 01 01 0f                                    |.....           |
+\end{verbatim}
+
+Then a \emph{start of session} chunk follows.
+\begin{verbatim}
+               0e 0e 02  4b 82 d0 f3 04 4d 8b e3  |     ...K....M..|
+00 3c 0f                                          |.<.             |
+\end{verbatim}
+Its first eight bytes, (\str{4b} to \str{e3}) tell you that the time is $1266864371.072190947$ seconds after the epoch, which is February 22, 2010, 18:46:11 UTC.
+The next two bytes, \str{00 3c} represent a timezone of $60$ which translates to UTC+01:00.
+
+After this chunk, the environment variables are listed.
+These are \str{name=value} pairs, seperated by null bytes.
+This information is important to interpret the actual terminal data:
+For example, different control codes are used depending on the \str{TERM} variable’s setting.
+\begin{verbatim}
+         0e 0e 12 53 53  48 5f 41 47 45 4e 54 5f  |   ...SSH_AGENT_|
+50 49 44 3d 31 36 33 30  00 47 50 47 5f 41 47 45  |PID=1630.GPG_AGE|
+4e 54 5f 49 4e 46 4f 3d  2f 74 6d 70 2f 67 70 67  |NT_INFO=/tmp/gpg|
+2d 4b 50 62 79 65 43 2f  53 2e 67 70 67 2d 61 67  |-KPbyeC/S.gpg-ag|
+65 6e 74 3a 31 36 33 31  3a 31 00 54 45 52 4d 3d  |ent:1631:1.TERM=|
+72 78 76 74 00 53 48 45  4c 4c 3d 2f 62 69 6e 2f  |rxvt.SHELL=/bin/|
+62 61 73 68 00 57 49 4e  44 4f 57 49 44 3d 32 37  |bash.WINDOWID=27|
+32 36 32 39 38 34 00 55  53 45 52 3d 73 63 79 00  |262984.USER=scy.|
+53 53 48 5f 41 55 54 48  5f 53 4f 43 4b 3d 2f 74  |SSH_AUTH_SOCK=/t|
+6d 70 2f 73 73 68 2d 64  63 74 77 4b 42 31 36 30  |mp/ssh-dctwKB160|
+37 2f 61 67 65 6e 74 2e  31 36 30 37 00 50 41 54  |7/agent.1607.PAT|
+48 3d 2f 68 6f 6d 65 2f  73 63 79 2f 62 69 6e 3a  |H=/home/scy/bin:|
+2f 75 73 72 2f 6c 6f 63  61 6c 2f 62 69 6e 3a 2f  |/usr/local/bin:/|
+75 73 72 2f 62 69 6e 3a  2f 62 69 6e 3a 2f 75 73  |usr/bin:/bin:/us|
+72 2f 67 61 6d 65 73 00  50 57 44 3d 2f 68 6f 6d  |r/games.PWD=/hom|
+65 2f 73 63 79 00 4c 41  4e 47 3d 65 6e 5f 55 53  |e/scy.LANG=en_US|
+2e 55 54 46 2d 38 00 43  4f 4c 4f 52 46 47 42 47  |.UTF-8.COLORFGBG|
+3d 37 3b 64 65 66 61 75  6c 74 3b 30 00 48 4f 4d  |=7;default;0.HOM|
+45 3d 2f 68 6f 6d 65 2f  73 63 79 00 53 48 4c 56  |E=/home/scy.SHLV|
+4c 3d 32 00 4c 4f 47 4e  41 4d 45 3d 73 63 79 00  |L=2.LOGNAME=scy.|
+57 49 4e 44 4f 57 50 41  54 48 3d 37 00 44 49 53  |WINDOWPATH=7.DIS|
+50 4c 41 59 3d 3a 30 2e  30 00 43 4f 4c 4f 52 54  |PLAY=:0.0.COLORT|
+45 52 4d 3d 72 78 76 74  2d 78 70 6d 00 5f 3d 75  |ERM=rxvt-xpm._=u|
+6e 69 2f 62 61 63 68 65  6c 6f 72 2f 66 6f 72 73  |ni/bachelor/fors|
+63 72 69 70 74 00 0f                              |cript..         |
+\end{verbatim}
+
+The next chunk contains the locale settings the C library uses for messages, number and currency formatting and other things.
+Although the user may choose different locales for either category, they are usually all the same.
+This example makes no difference:
+The system is configured for US English and a character encoding of UTF-8.
+\begin{verbatim}
+                     0e  0e 13 65 6e 5f 55 53 2e  |       ...en_US.|
+55 54 46 2d 38 00 65 6e  5f 55 53 2e 55 54 46 2d  |UTF-8.en_US.UTF-|
+38 00 65 6e 5f 55 53 2e  55 54 46 2d 38 00 65 6e  |8.en_US.UTF-8.en|
+5f 55 53 2e 55 54 46 2d  38 00 65 6e 5f 55 53 2e  |_US.UTF-8.en_US.|
+55 54 46 2d 38 00 65 6e  5f 55 53 2e 55 54 46 2d  |UTF-8.en_US.UTF-|
+38 00 65 6e 5f 55 53 2e  55 54 46 2d 38 00 0f     |8.en_US.UTF-8.. |
+\end{verbatim}
+
+The terminal \cmd{forscript} is running in is 168 characters wide (\str{00 a8}) and 55 characters high (\str{00 37}), as the \emph{terminal size} chunk shows:
+\begin{verbatim}
+                                              0e  |               .|
+0e 11 00 a8 00 37 0f                              |.....7.         |
+\end{verbatim}
+
+After all these metadata chunks, this is where actual terminal output starts.
+Since the \param{-q} flag was not used, \cmd{forscript} writes a startup message both to the terminal and the transcript, containing date and time and the file name.
+The final two bytes \str{0d 0a} represent the control codes \emph{carriage return} and \emph{line feed}.
+Note that in contrast to the Unix convention of using just \emph{line feed} (\str{\bs{}n}) to designate “new line” in text files, a terminal (or at least the terminal the author’s machine is using) requires both bytes to be present.
+\begin{verbatim}
+                     66  6f 72 73 63 72 69 70 74  |       forscript|
+20 73 74 61 72 74 65 64  20 6f 6e 20 4d 6f 6e 20  | started on Mon |
+32 32 20 46 65 62 20 32  30 31 30 20 30 37 3a 34  |22 Feb 2010 07:4|
+36 3a 31 31 20 50 4d 20  43 45 54 2c 20 66 69 6c  |6:11 PM CET, fil|
+65 20 69 73 20 74 72 61  6e 73 63 72 69 70 74 0d  |e is transcript.|
+0a                                                |.               |
+\end{verbatim}
+
+Now the shell is started.
+It requires some time to read its configuration files and initialize the environment, therefore \cmd{forscript} has to wait for it and starts measuring the time until the next piece of data arrives.
+After the shell has initialized, it prints out its \term{prompt}.
+On this machine, the prompt (\str{scy@bijaz \textasciitilde{} master ? 0.11 19:46 \$}) is a rather complicated, colored one and therefore contains lots of ISO~6429 control codes (also known as “ANSI escape codes”) to define the visual appearance.
+
+However, before the prompt is written to the data file, \cmd{forscript} writes a \emph{delay} meta chunk:
+It took $0.065087679$ seconds before the prompt was printed.
+\begin{verbatim}
+   0e 0e 16 00 00 00 00  03 e1 28 bf 0f 1b 5d 30  | .........(...]0|
+3b 73 63 79 40 62 69 6a  61 7a 3a 7e 07 1b 5b 31  |;scy@bijaz:~..[1|
+3b 33 32 6d 73 63 79 1b  5b 30 3b 33 32 6d 40 1b  |;32mscy.[0;32m@.|
+5b 31 3b 33 32 6d 62 69  6a 61 7a 1b 5b 31 3b 33  |[1;32mbijaz.[1;3|
+34 6d 20 7e 20 1b 5b 30  3b 33 36 6d 6d 61 73 74  |4m ~ .[0;36mmast|
+65 72 20 3f 20 1b 5b 31  3b 33 30 6d 30 2e 31 31  |er ? .[1;30m0.11|
+20 1b 5b 30 3b 33 37 6d  31 39 3a 34 36 20 1b 5b  | .[0;37m19:46 .[|
+30 3b 33 33 6d 1b 5b 31  3b 33 32 6d 24 1b 5b 30  |0;33m.[1;32m$.[0|
+6d 20                                             |m               |
+\end{verbatim}
+
+Next, $1.291995750$ seconds after the prompt has been printed, the user types the letter \str{e} on the keyboard.
+The letter is enclosed by \str{0e} and \str{0f} in order to mark it as input data.
+\begin{verbatim}
+      0e 0e 16 00 00 00  01 11 67 80 66 0f 0e 65  |m ........g.f..e|
+0f                                                |.               |
+\end{verbatim}
+
+After the letter has been typed, the kernel will usually \emph{echo} the character, that is, put it into the terminal’s output stream to make it appear on screen.
+It will take a small amount of time (in this case $0.0079911$ seconds) until \cmd{forscript} receives the character and write it to the transcript file, this time declaring it as output.
+\begin{verbatim}
+   0e 0e 16 00 00 00 00  00 79 ef 3c 0f 65        | ........y.<.e  |
+\end{verbatim}
+
+The user now continues to type the characters \str{echo -l}, which will be echoed as well.
+\begin{verbatim}
+                                           0e 0e  |              ..|
+16 00 00 00 00 05 b9 48  10 10 0f 0e 63 0f 0e 0e  |.......H....c...|
+16 00 00 00 00 00 79 a5  09 0f 63 0e 0e 16 00 00  |......y...c.....|
+00 00 0a 7d bf 1e 0f 0e  68 0f 0e 0e 16 00 00 00  |...}....h.......|
+00 00 79 db 51 0f 68 0e  0e 16 00 00 00 00 0b 71  |..y.Q.h........q|
+c4 94 0f 0e 6f 0f 0e 0e  16 00 00 00 00 00 79 fc  |....o.........y.|
+54 0f 6f 0e 0e 16 00 00  00 02 09 89 aa a1 0f 0e  |T.o.............|
+20 0f 0e 0e 16 00 00 00  00 00 79 f2 83 0f 20 0e  | .........y... .|
+0e 16 00 00 00 01 2f 35  2a bc 0f 0e 2d 0f 0e 0e  |....../5*...-...|
+16 00 00 00 00 00 79 bb  20 0f 2d 0e 0e 16 00 00  |......y. .-.....|
+00 00 14 fb 28 4d 0f 0e  6c 0f 0e 0e 16 00 00 00  |....(M..l.......|
+00 00 7a 01 3d 0f 6c 0e  0e 16 00 00 00 00 2b 64  |..z.=.l.......+d|
+b7 45 0f                                          |.E.             |
+\end{verbatim}
+
+Since typing the \str{l} was a mistake, the user presses the “backspace” key (ASCII value $127$) to remove the last character.
+\begin{verbatim}
+         0e 7f 0f                                 |   ...          |
+\end{verbatim}
+
+After the usual delay, the shell will send two things to the terminal:
+First, an ASCII backspace character (\str{08}) to position the cursor on the \str{l}, then the ANSI code \emph{CSI~K}, represented by the bytes \str{1b 5b 4b}, which will cause the terminal to make all characters at or right of the cursor’s position disappear.
+\begin{verbatim}
+                  0e 0e  16 00 00 00 00 00 79 c2  |      ........y.|
+7e 0f 08 1b 5b 4b                                 |~...[K          |
+\end{verbatim}
+
+The user now enters the letter \str{n} and hits the return key (represented as ASCII byte \str{0d}) in order to execute the command \str{echo -n}.
+After executing the command (which produces no output), the shell displays the prompt again.
+\begin{verbatim}
+                  0e 0e  16 00 00 00 00 37 50 74  |      .......7Pt|
+a3 0f 0e 6e 0f 0e 0e 16  00 00 00 00 00 79 c4 67  |...n.........y.g|
+0f 6e 0e 0e 16 00 00 00  00 2e bb 20 01 0f 0e 0d  |.n......... ....|
+0f 0e 0e 16 00 00 00 00  00 79 f9 df 0f 0d 0a 0e  |.........y......|
+0e 16 00 00 00 00 02 25  be d3 0f 1b 5d 30 3b 73  |.......%....]0;s|
+63 79 40 62 69 6a 61 7a  3a 7e 07 1b 5b 31 3b 33  |cy@bijaz:~..[1;3|
+32 6d 73 63 79 1b 5b 30  3b 33 32 6d 40 1b 5b 31  |2mscy.[0;32m@.[1|
+3b 33 32 6d 62 69 6a 61  7a 1b 5b 31 3b 33 34 6d  |;32mbijaz.[1;34m|
+20 7e 20 1b 5b 30 3b 33  36 6d 6d 61 73 74 65 72  | ~ .[0;36mmaster|
+20 3f 20 1b 5b 31 3b 33  30 6d 30 2e 31 30 20 1b  | ? .[1;30m0.10 .|
+5b 30 3b 33 37 6d 31 39  3a 34 36 20 1b 5b 30 3b  |[0;37m19:46 .[0;|
+33 33 6d 1b 5b 31 3b 33  32 6d 24 1b 5b 30 6d 20  |33m.[1;32m$.[0m |
+\end{verbatim}
+Note that without recording the user’s input, it would be impossible to determine whether the user pressed return to actually run the command or whether entering the command was cancelled, for example by pressing \ctrl{C}.
+
+$1.587984366$ seconds later, the user decides to end the current session by pressing \ctrl{D}, which is equivalent to the byte value \str{04}.
+\begin{verbatim}
+0e 0e 16 00 00 00 01 23  0b ed ee 0f 0e 04 0f     |.......#....... |
+\end{verbatim}
+
+The shell reacts by printing \str{exit} and terminating.
+Then, \cmd{forscript} prints its shutdown message.
+\begin{verbatim}
+                                              65  |               e|
+78 69 74 0d 0a 66 6f 72  73 63 72 69 70 74 20 64  |xit..forscript d|
+6f 6e 65 20 6f 6e 20 4d  6f 6e 20 32 32 20 46 65  |one on Mon 22 Fe|
+62 20 32 30 31 30 20 30  37 3a 34 36 3a 32 31 20  |b 2010 07:46:21 |
+50 4d 20 43 45 54 2c 20  66 69 6c 65 20 69 73 20  |PM CET, file is |
+74 72 61 6e 73 63 72 69  70 74 0d 0a              |transcript..    |
+\end{verbatim}
+
+Finally, the exit status ($0$) of the shell is recorded in an \emph{end of session} metadata chunk and the transcript file ends.
+\begin{verbatim}
+                                     0e 0e 03 00  |            ....|
+0f                                                |.|
+\end{verbatim}
 
 \section{Summary}\label{summary}
 
