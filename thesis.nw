@@ -620,7 +620,7 @@ void die(char *message, int chunk) {
 			fprintf(stderr, "unknown error");
 	}
 	if (message != NULL)
-		fprintf(stderr, message);
+		fprintf(stderr, "%s", message);
 	fprintf(stderr, "; exiting.\n");
 	exit(EXIT_FAILURE);
 }
@@ -668,10 +668,14 @@ MYNAME = argv[0];
 If \cmd{forscript} was called using a path name (e.g. \str{/usr/bin/forscript}), everything up to the final slash needs to be cut off.
 This is done by moving the pointer to the character immediately following the final slash.
 <<setmyname>>=
-{ char *lastslash;
-	if ((lastslash = strrchr(MYNAME, '/')) != NULL)
-		MYNAME = lastslash + 1;
+{ char *name;
+	if ((name = basename(MYNAME)) != NULL)
+		MYNAME = name;
 }
+@
+[[basename()]] requires \str{libgen.h}:
+<<includes>>=
+#include <libgen.h>
 @
 
 \subsubsection{Command Line Arguments}
@@ -733,7 +737,7 @@ The parsing loop therefore looks like this:
 			fprintf(stderr,
 			        "usage: %s [-afqt] [-c command] [file]\n",
 			        MYNAME);
-			exit(1);
+			exit(EXIT_FAILURE);
 			break;
 		}
 	argc -= optind;
@@ -764,7 +768,7 @@ if (argc > 0) {
 		       "want to use it.\n"
 		       "%s not started.\n",
 		       OUTN, MYNAME, OUTN, MYNAME);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 }
 @
@@ -1033,10 +1037,8 @@ Otherwise the default is \str{/bin/sh}, which should exist on all Unix systems.
 Next, the name of the shell, without any path components, is determined to be used as argument zero when executing the client command.
 <<doshell>>=
 	char *shname;
-	if ((shname = strrchr(shell, '/')) == NULL)
+	if ((shname = basename(shell)) == NULL)
 		shname = shell;
-	else
-		shname++;
 @
 
 \subsubsection*{Executing the Shell}
