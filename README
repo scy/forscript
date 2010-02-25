@@ -1,0 +1,46 @@
+README for forscript
+
+This project has just been open-sourced, this file is only preliminary.
+
+
+WHAT IS IT?
+===========
+
+Please read <http://scytale.name/proj/forscript/>.
+
+
+WHAT'S THE STATUS?
+==================
+
+It works and does what it's supposed to, although it could log more metadata.
+I'm currently working on transforming forscript from a thesis into an ordinary
+free software project, for example by providing a readme file and adding an
+open-source license (most likely GPLv3) to it.
+
+
+WHAT ARE ITS REQUIREMENTS?
+==========================
+
+To generate the source file or the documentation, you need noweb:
+   http://www.cs.tufts.edu/~nr/noweb/
+Generating the documentation additionally needs LaTeX and some packages.
+
+To use the (pretty simple) Makefile, you need make. Duh.
+
+To compile the source, a POSIX system with decent C99 compiler and library is
+required. Your also need to have the POSIX real-time extensions (clock_gettime)
+available. The most popular Unix which doesn't have these is Apple Mac OS X.
+Someone could patch forscript to use gettimeofday() there... (hint, hint!)
+
+
+HOW DO I BUILD IT?
+==================
+
+Type "make". This should do the trick on most compatible systems. If your
+system is not compatible, hack forscript to support it and send me a patch! :)
+
+
+HOW CAN I CONTACT YOU?
+======================
+
+<http://scytale.name/contact/> or <http://github.com/scy/>.
