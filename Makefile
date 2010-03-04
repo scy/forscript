@@ -1,3 +1,7 @@
+CC=gcc
+CFLAGS+=-g -std=c99 -Wall -Wextra -pedantic -pipe
+LDFLAGS+=-Wl,-lrt
+
 # Phony targets.
 .PHONY: all expose clean clean-texincludes mrproper
 
@@ -24,7 +28,7 @@ $(addsuffix .c,$(BINS)): thesis.nw
 
 # A binary is built using the source file.
 $(BINS): %: %.c
-	gcc -std=c99 -Wl,-lrt -g -o "$@" -Wall -Wextra -pedantic -fstack-protector-all -pipe "$<"
+	$(CC) -o "$@" $(CFLAGS) $(LDFLAGS) "$<"
 
 # Phony exposé target.
 expose: expose.pdf
