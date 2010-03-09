@@ -1,9 +1,10 @@
 CC=gcc
 CFLAGS+=-g -std=c99 -Wall -Wextra -pedantic -pipe
 LDFLAGS+=-Wl,-lrt
+RM=rm -f
 
 # Phony targets.
-.PHONY: all expose clean clean-texincludes mrproper
+.PHONY: all expose clean clean-texincludes distclean
 
 # Top-level documents.
 DOCS = expose thesis
@@ -39,8 +40,11 @@ thesis: thesis.pdf
 # Remove temporary TeX and C files.
 clean:
 	# Remove aux files from PDF generation.
-	rm -f $(foreach stem,$(DOCS),$(foreach ext,aux log out pdf,$(stem).$(ext)))
+	$(RM) $(foreach stem,$(DOCS),$(foreach ext,aux log out pdf,$(stem).$(ext)))
 	# Remove weaved thesis TeX source.
-	rm -f thesis.tex
+	$(RM) thesis.tex
 	# Remove tangled C sources.
-	rm -f $(addsuffix .c,$(BINS))
+	$(RM) $(addsuffix .c,$(BINS))
+
+distclean: clean
+	$(RM) $(BINS)
