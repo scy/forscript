@@ -473,7 +473,7 @@ Since a \cmd{forscript} file has to start with a file version chunk followed by 
 \end{verbatim}
 The first two bytes start a metadata chunk, the third one identifies it as a file version chunk.
 The fourth byte contains the version number, which is currently \str{0x01} but may change in the future.
-Byte 5 closes the version chunk, 5 to 8 start a begin of session chunk.
+Byte 5 closes the version chunk, 6 to 8 start a begin of session chunk.
 
 \subsection{Invocation}
 \cmd{forscript}’s invocation syntax has been designed to be compatible to \cmd{script}, most parameters result in the same behavior.
