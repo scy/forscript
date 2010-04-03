@@ -1,0 +1,262 @@
+\documentclass[ignorenonframetext,ucs]{beamer}
+
+\usepackage[ngerman]{babel}
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{relsize}
+\usepackage{lmodern}
+
+\PreloadUnicodePage{0}
+
+% \usepackage[colorlinks]{hyperref}
+\newcommand\refurl[2]{#2\footnote{\url{#1}}}
+
+\usepackage{listings}
+\usepackage{graphicx}
+% \usepackage[scaled]{luximono}
+\definecolor{darkgreen}{rgb}{0,0.5,0}
+\lstset{language=,extendedchars=false,basicstyle=\small\ttfamily\color{lightgray},backgroundcolor=\color{black},escapechar=\%}
+\newcommand\SH[1]{{\color{green}\$ }{\color{white}#1}}
+\def\TYPE{\lstinline[basicstyle=\small\ttfamily\color{darkgreen}]}
+\def\cmd{\textsc}
+\usetheme[compress]{Berlin}
+
+% \AtBeginSection[]
+% {
+%   \begin{frame}<beamer>{Übersicht}
+%     \tableofcontents[currentsection,currentsubsection]
+%   \end{frame}
+% }
+
+\title{Design~and~Implementation~of a~Forensic~Documentation~Tool for~Interactive~Command\mbox{-}line~Sessions}
+\subtitle{Abschlussvortrag}
+\author{Tim Weber}
+\date{15. März 2010}
+\begin{document}
+
+\begin{frame}\maketitle\end{frame}
+
+% \begin{frame}{Der Vortragende}
+% \begin{itemize}
+% \item Student der Software- und Internettechnologie
+% \item Interessenschwerpunkte: \\ IT-Sicherheit, Netzwerkprotokolle, Datenbanken
+% \end{itemize}
+% \end{frame}
+
+\section{\cmd{script}}
+
+\subsection{Einsatzgebiet}
+
+\begin{frame}{Protokollierung von Terminalsitzungen}
+\begin{itemize}
+\item Im Zuge forensischer Ermittlungen
+\item Umfassende und detaillierte Aufzeichnung \\ der durchgeführten Tätigkeiten
+\item Dokumentation für\begin{itemize}
+\item den Ermittler selbst
+\item mögliche Amtsnachfolger
+\item unabhängige Gutachter o.Ä.\end{itemize}
+\end{itemize}
+\end{frame}
+
+\subsection{Verwendung von \cmd{script}}
+
+\begin{frame}[fragile=singleslide]{Einsatzbeispiel \cmd{script}}
+\begin{example}
+\begin{lstlisting}
+%\SH{script -t typescript 2> timing}%
+Script started, file is typescript
+%\SH{dd if=/dev/sda | nc 10.10.1.1 1234}%
+...
+%\SH{logout}%
+Script done, file is typescript
+\end{lstlisting}
+\end{example}
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{Was tut \cmd{script}?}
+\begin{example}
+\begin{lstlisting}
+%\SH{script}%
+Script started, file is typescript
+%\SH{ps faux}%
+...
+3704 ?     S  /usr/bin/x-terminal-emulator
+3705 pts/4 Ss  \_ -bash
+3843 pts/4 S+      \_ script
+3844 pts/4 S+          \_ script
+3845 pts/7 Ss              \_ bash -i
+3878 pts/7 R+                  \_ ps faux
+\end{lstlisting}
+\end{example}
+\begin{center}
+Terminal-Emulator $\Leftrightarrow$ \emph{pts/4} $\Leftrightarrow$ \cmd{script} $\Leftrightarrow$ \emph{pts/7} $\Leftrightarrow$ \cmd{bash}
+\end{center}
+\end{frame}
+
+\subsection{Ausgabeformat}
+
+\begin{frame}[fragile=singleslide]{Typescript}
+\begin{itemize}
+\item 1:1-Ausgabe der als Kindprozess laufenden Software
+\item Inklusive Steuerzeichen etc.
+\end{itemize}
+\begin{example}
+\begin{verbatim}
+^[[1;32mscy@ ~ $^[[0m echo test^M
+test^M
+\end{verbatim}
+\end{example}
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{Timingdaten}
+\begin{itemize}
+\item ASCII-Daten
+\item Zu wartende Zeit in Sekunden; Anzahl auszugebender Bytes
+\end{itemize}
+\begin{example}
+\begin{verbatim}
+0.163965 117
+0.038713 1
+9.803904 1
+0.175984 1
+0.023397 2
+…
+\end{verbatim}
+\end{example}
+\end{frame}
+
+\begin{frame}{Schwächen}
+\begin{itemize}
+\item Nur Bildschirmausgabe wird protokolliert, \\ Eingaben überhaupt nicht\begin{itemize}
+\item Tab-Completion? \texttt{\char`\^C}/\texttt{\char`\^D}/\texttt{\char`\^M}?\end{itemize}
+\item Timinginformationen werden in separater Datei gespeichert
+\item Keine Informationen über die Laufzeitumgebung\begin{itemize}
+\item Zeichenkodierung
+\item Umgebungsvariablen
+\item Fenstergröße
+\item …\end{itemize}
+\end{itemize}
+\end{frame}
+
+\subsection{Die Neuentwicklung: \cmd{forscript}}
+
+\begin{frame}{Ziele der Bachelorarbeit}
+\begin{itemize}
+\item Ausführliche Dokumentation des Verhaltens von \cmd{script}, Aufzeigen seiner Schwächen
+\item Gestalten eines neuen Dateiformates, \\ das forensischen Ansprüchen genügt
+\item Entwickeln einer Software, die in diesem Format protokolliert
+\item Dokumentieren dieser Software nach den Prinzipien \\ des \emph{literate programming}
+\end{itemize}
+\end{frame}
+
+\section{Das neue Datenformat}
+
+\subsection{Grundlegendes}
+
+\begin{frame}{Bestandteile einer \cmd{forscript}-Datei}
+Ein einziger chronologisch fortlaufender Datenstrom, enthält:
+\begin{itemize}
+\item Ausgaben der Clientsoftware
+\item Eingaben des Benutzers
+\item Metainformationen\begin{itemize}
+\item die Datei strukturierend
+\item den Datenstrom ergänzend\end{itemize}
+\end{itemize}
+\end{frame}
+
+\subsection{Datentypen}
+
+\begin{frame}{Ausgaben der Clientsoftware}
+\begin{itemize}
+\item Identisch zu \cmd{script}
+\item Steuerzeichen werden 1:1 übernommen
+\item Für maximale Authentizität werden \\ keinerlei Änderungen vorgenommen\begin{itemize}
+\item Keine Umkodierung in Unicode etc.
+\item Ausnahme: Escaping von Bytes mit Sonderfunktion
+\item Rekonstruktion/Wiedergabe: Aufgabe der lesenden Software, \\ die ursprüngliche Situation zu erkennen, \\ z.B. anhand Umgebungsvariablen\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Eingaben des Benutzers}
+\begin{itemize}
+\item Durch vorangestelltes \emph{shift out, shift out} (\texttt{0x0e 0x0e}) signalisiert
+\item Unveränderte Eingabebytes (Ausnahme: Escaping)\begin{itemize}
+\item Druckbare Zeichen
+\item Cursorbewegungen
+\item Tastenkombinationen
+\item Sondertasten
+\item …\end{itemize}
+\item Abschluss durch \emph{shift in} (\texttt{0x0f})
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Metainformationen}
+\begin{itemize}
+\item Durch vorangestelltes \emph{shift out} (\texttt{0x0e 0x0e}) und \\ ein Typ-Byte signalisiert
+\item Festgelegte Typ-Bytes, aber in künftigen Versionen erweiterbar\begin{itemize}
+\item Dateiformat-Version
+\item Anfang einer neuen Sitzung
+\item Umgebungsvariablen
+\item Fenstergröße
+\item Sprache und Zeichensatz/Encoding
+\item Timinginformationen
+\item …\end{itemize}
+\item Terminiert durch \emph{shift in} (\texttt{0x0f})
+\end{itemize}
+\end{frame}
+
+\subsection{Eigenschaften}
+
+\begin{frame}{Escaping}
+\begin{itemize}
+\item \emph{shift out} (\texttt{0x0e}) und \emph{shift in} (\texttt{0x0f}) werden durch vorangestelltes \emph{data link escape} (\texttt{0x10}) escaped
+\item \emph{data link escape} muss folglich auch escaped werden: \\ durch sich selbst
+\begin{example}\begin{center}
+\texttt{0x4e 0x0f 0x00 0x61 0x74 0x10}\\
+$\Downarrow$\\
+\texttt{0x4e 0x10 0x0f 0x00 0x61 0x74 0x10 0x10}
+\end{center}\end{example}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Zeitmessung}
+\begin{itemize}
+\item Hauptschleife: Warten auf\begin{enumerate}
+\item Benutzereingaben
+\item Clientausgaben
+\item Signale (Fenstergröße verändert, Client beendet)\end{enumerate}
+\item Vor Bearbeiten eines jedes Ereignisses wird Zeitdifferenz \\ in Ausgabedatei geschrieben
+\end{itemize}
+\end{frame}
+
+\section{\cmd{forscript}}
+
+\subsection{Implementierung}
+
+\begin{frame}{Standards}
+\begin{itemize}
+\item \cmd{forscript} hält sich strikt an Unix-übergreifende Standards\begin{itemize}
+\item C 99
+\item POSIX.1-2001
+\item System V r4
+\item keine BSD-Funktionen\end{itemize}
+\item Lauffähig auf Linux und NetBSD, \\ möglicherweise auch auf anderen
+\item Auf OS~X bislang nicht lauffähig, \\ da dort \texttt{clock\_gettime()} fehlt\begin{itemize}
+\item Kann aber emuliert oder ersetzt werden\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Neuerungen}
+\begin{itemize}
+\item \cmd{script} etwa 1997 geschrieben, \\ neuere Library-Funktionen existieren:\begin{itemize}
+\item \texttt{select()} statt mehreren Prozessen
+\item \texttt{posix\_openpt()} statt race-behaftetem \\ Durchprobieren von PTYs
+\item \texttt{clock\_gettime()} mit monotonem Zeitverlauf\end{itemize}
+\item \cmd{forscript} ignoriert \emph{SIGSTOP} des Childs
+\item \texttt{-a} mit Timing unterstützt
+\item Nur 1× forken $\Rightarrow$ vereinfachter Code
+\end{itemize}
+\end{frame}
+
+\end{document}

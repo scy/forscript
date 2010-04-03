@@ -1,8 +1,10 @@
 *.c
 *.aux
 *.log
+*.nav
 *.out
 *.pdf
+*.snm
 *.swp
 *.toc
 article.tex
